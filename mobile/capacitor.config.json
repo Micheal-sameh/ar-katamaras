@@ -1,0 +1,9 @@
+{
+  "appId": "com.avarewase.readings",
+  "appName": "Avarewase Readings",
+  "webDir": "www",
+  "backgroundColor": "#faf6ee",
+  "plugins": {
+    "CapacitorHttp": { "enabled": true }
+  }
+}

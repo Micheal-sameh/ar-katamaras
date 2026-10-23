@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Avarewase Readings</string>
+    <string name="title_activity_main">Avarewase Readings</string>
+    <string name="package_name">com.avarewase.readings</string>
+    <string name="custom_url_scheme">com.avarewase.readings</string>
+</resources>
