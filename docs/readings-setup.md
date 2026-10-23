@@ -151,3 +151,8 @@ The Katameros API offers one Bible for English (NKJV) and French (Louis Segond 1
 `GET /api/health` answers `{"status":"ok"|"failing","checks":{...}}` with HTTP 200 or 503. It checks the database, the cache, a heartbeat the scheduler leaves every minute, a heartbeat that only a running queue worker can leave, and that at least 3 days are stored ahead for each language. Give the monitor a 5 minute interval; the first minutes after a restart can report failing until the heartbeats start.
 
 The schedule (Cairo time): Tuesday 03:00 warm-up; daily 04:00 catch-up (only while incomplete); Saturday 03:00 refresh of the coming week; 25th 03:30 monthly pre-cache; daily 05:00 monthly catch-up from the 26th; daily 02:30 backup; every minute heartbeats.
+
+## Desktop app (Electron)
+
+A ready-made desktop wrapper is in `desktop/` (see `desktop/README.md`): `npm install`, `npm start`, `npm run dist:win`.
+It asks for the server address on first start. This is simpler than the Tauri route above because it needs no Rust.

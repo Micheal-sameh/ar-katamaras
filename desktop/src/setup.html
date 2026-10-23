@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Server address</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<style>
+  body { font: 15px system-ui, sans-serif; margin: 0; padding: 40px; background: #faf6ee; color: #2b2118; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  p { margin: 0 0 20px; color: #6a5c4d; }
+  input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 15px; border: 1px solid #c9bba6; border-radius: 8px; }
+  button { margin-top: 14px; padding: 10px 20px; font-size: 15px; border: 0; border-radius: 8px; background: #7a1f1f; color: #fff; cursor: pointer; }
+  #err { margin-top: 12px; color: #a11; min-height: 1.2em; }
+</style>
+</head>
+<body>
+<h1>Use my own server</h1>
+<p>By default the app reads the Katameros service directly. To use your church's own Avarewase server instead, enter its address, for example <b>https://readings.example.org</b>. Leave it empty to go back to Katameros directly.</p>
+<input id="url" placeholder="https://readings.example.org" autofocus>
+<button id="go">Save</button>
+<div id="err"></div>
+<script>
+  const input = document.getElementById('url'), err = document.getElementById('err');
+  input.value = window.desktop.server;
+  const go = async () => {
+    err.textContent = '';
+    const result = await window.desktop.saveServer(input.value);
+    if (result && result.error) err.textContent = result.error;
+  };
+  document.getElementById('go').onclick = go;
+  input.onkeydown = (e) => { if (e.key === 'Enter') go(); };
+</script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "name": "avarewase-readings-desktop",
+  "productName": "Avarewase Readings",
+  "version": "1.0.0",
+  "description": "Desktop app for the Avarewase daily readings",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "sync": "node scripts/sync.js",
+    "start": "node scripts/sync.js && electron .",
+    "dist": "node scripts/sync.js && electron-builder",
+    "dist:win": "node scripts/sync.js && electron-builder --win",
+    "dist:mac": "node scripts/sync.js && electron-builder --mac",
+    "dist:linux": "node scripts/sync.js && electron-builder --linux"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.avarewase.readings",
+    "productName": "Avarewase Readings",
+    "files": ["src/**/*", "app/**/*", "package.json"],
+    "directories": { "output": "dist" },
+    "win": { "target": "nsis", "icon": "app/icons/icon-512.png" },
+    "mac": { "target": "dmg", "category": "public.app-category.lifestyle" },
+    "linux": { "target": ["AppImage"], "category": "Utility" }
+  }
+}
