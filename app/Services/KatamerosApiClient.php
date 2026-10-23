@@ -28,12 +28,18 @@ use Illuminate\Support\Facades\Http;
  */
 class KatamerosApiClient implements ReadingsApiClient
 {
+    private const BOOK_PSALMS = 19;
+
+    private const BOOK_MATTHEW = 40;
+
+    private const BOOK_JOHN = 43;
+
     public function __construct(private readonly CopticCalendarService $calendar) {}
 
-    public function fetch(CarbonImmutable $date, Language $language): DailyReadingDto
+    public function fetch(CarbonImmutable $date, Language $language, int $bibleId = 0): DailyReadingDto
     {
-        $json = $this->request($date, $language);
-        $dto = $this->map($json, $date, $language);
+        $json = $this->request($date, $language, $bibleId);
+        $dto = $this->map($json, $date, $language, $bibleId);
 
         if ($dto->isEmpty()) {
             throw new ReadingsApiException("Katameros returned no readable text for {$date->toDateString()}.");
@@ -42,11 +48,13 @@ class KatamerosApiClient implements ReadingsApiClient
         return $dto;
     }
 
-    private function request(CarbonImmutable $date, Language $language): array
+    private function request(CarbonImmutable $date, Language $language, int $bibleId): array
     {
         $query = ['languageId' => $language->value];
-        if ($bibleId = config('readings.api.bible_id')) {
+        if ($bibleId > 0) {
             $query['bibleId'] = $bibleId;
+        } elseif ($default = config('readings.api.bible_id')) {
+            $query['bibleId'] = $default;
         }
 
         try {
@@ -72,19 +80,21 @@ class KatamerosApiClient implements ReadingsApiClient
         return $json;
     }
 
-    private function map(array $json, CarbonImmutable $date, Language $language): DailyReadingDto
+    private function map(array $json, CarbonImmutable $date, Language $language, int $bibleId): DailyReadingDto
     {
         $sections = [];
         foreach ($json['sections'] as $section) {
             $subSections = [];
             foreach ($section['subSections'] ?? [] as $sub) {
-                $readings = [];
-                foreach ($sub['readings'] ?? [] as $reading) {
-                    $readings[] = $this->mapReading($reading);
-                }
                 $subTitle = (string) ($sub['title'] ?? '');
+                $subType = ReadingType::fromTitle($subTitle);
+                $rawReadings = array_values(array_filter($sub['readings'] ?? [], 'is_array'));
+                $readings = [];
+                foreach ($rawReadings as $index => $reading) {
+                    $readings[] = $this->mapReading($reading, $subType, $index, count($rawReadings));
+                }
                 $subSections[] = new SubSectionDto(
-                    ReadingType::fromTitle($subTitle),
+                    $subType,
                     $subTitle,
                     $this->nullableText($sub['introduction'] ?? null),
                     $readings,
@@ -100,6 +110,7 @@ class KatamerosApiClient implements ReadingsApiClient
             $this->mapCopticDate($json['copticDate'] ?? null, $date),
             $this->hoistSynaxarium($sections, $language),
             ReadingSource::Api,
+            $bibleId,
         );
     }
 
@@ -138,13 +149,22 @@ class KatamerosApiClient implements ReadingsApiClient
         return $result;
     }
 
-    private function mapReading(array $reading): ReadingDto
+    private function mapReading(array $reading, ReadingType $subType, int $index, int $count): ReadingDto
     {
         $passages = [];
+        $bookId = null;
         foreach ($reading['passages'] ?? [] as $passage) {
+            if (! is_array($passage)) {
+                continue; // the API sends null for readings that have no scripture (the Synaxarium)
+            }
+            $bookId ??= isset($passage['bookId']) ? (int) $passage['bookId'] : null;
             $verses = [];
             foreach ($passage['verses'] ?? [] as $verse) {
-                $verses[] = new VerseDto((int) ($verse['number'] ?? 0), trim((string) ($verse['text'] ?? '')));
+                $verses[] = new VerseDto(
+                    (int) ($verse['number'] ?? 0),
+                    trim((string) ($verse['text'] ?? '')),
+                    (int) ($verse['chapter'] ?? 0),
+                );
             }
             $passages[] = new PassageDto(
                 $this->nullableText($passage['bookTranslation'] ?? null),
@@ -159,7 +179,28 @@ class KatamerosApiClient implements ReadingsApiClient
             $this->nullableText($reading['conclusion'] ?? null),
             $passages,
             TextNormalizer::htmlToParagraphs($reading['html'] ?? null),
+            $this->readingType($subType, $bookId, $index, $count),
         );
+    }
+
+    /** The Psalm and the Gospel arrive in one sub-section; the book tells them apart (19 = Psalms, 40-43 = Gospels). */
+    private function readingType(ReadingType $subType, ?int $bookId, int $index, int $count): ReadingType
+    {
+        if ($subType !== ReadingType::PsalmGospel) {
+            return $subType;
+        }
+        if ($bookId === self::BOOK_PSALMS) {
+            return ReadingType::Psalm;
+        }
+        if ($bookId !== null && $bookId >= self::BOOK_MATTHEW && $bookId <= self::BOOK_JOHN) {
+            return ReadingType::Gospel;
+        }
+
+        return match (true) {
+            $count === 2 && $index === 0 => ReadingType::Psalm,
+            $count === 2 && $index === 1 => ReadingType::Gospel,
+            default => ReadingType::PsalmGospel,
+        };
     }
 
     /** "13/2/1743" is day/month/year. Falls back to computing it from the Gregorian date. */

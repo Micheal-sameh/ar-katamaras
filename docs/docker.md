@@ -7,7 +7,7 @@ One command starts the whole stack: the website, the API, the weekly pre-cache s
 | `web` | nginx. Serves the PWA from `public/`, passes the API to PHP. Published on `127.0.0.1:8080`. |
 | `app` | PHP-FPM. Runs the database migrations when it starts. |
 | `queue` | Queue worker (on Redis). Runs the 1 / 5 / 15 minute retries of failed days and the check that emails you after the monthly pre-cache. |
-| `scheduler` | Tuesday 03:00 `readings:warm`, daily 04:00 catch-up, and the 25th 03:30 `readings:warm-month` (all Cairo time). |
+| `scheduler` | The whole schedule (Cairo time): Tuesday 03:00 warm-up, daily 04:00 catch-up, Saturday refresh, the 25th monthly pre-cache and its catch-up, nightly backup, heartbeats. |
 | `redis` | Cache, locks and rate limiting. Not reachable from outside. |
 
 Data lives in three Docker volumes: `data` (the SQLite database: every stored day), `storage` (logs) and `redis`.
@@ -74,3 +74,14 @@ docker compose exec app php artisan queue:retry all # run the failed ones again
 After updating the code (`docker compose up -d`) the worker is recreated, so it always runs the new code. A job that is running when you stop the stack gets up to 70 seconds to finish.
 
 To send the failure email, the queue worker and a real mail server (`MAIL_*` in `docker/app.env`) are both needed.
+## Health checks and backups
+
+`queue` and `scheduler` have Docker health checks (`docker compose ps` shows `unhealthy` if either goes quiet), but Docker does not restart an unhealthy container or tell you about it. For an alert, point an uptime monitor at `https://your-site/api/health` (see "Monitoring" in `docs/readings-setup.md`).
+
+A nightly database copy is written to `/var/www/html/storage/app/backups` inside the `storage` volume. That is the same machine as the data, so copy it off regularly:
+
+```bash
+docker compose cp app:/var/www/html/storage/app/backups ./backups-$(date +%F)
+```
+
+To restore: stop the stack, copy a backup over `/data/database.sqlite` in the `data` volume, start it again.

@@ -22,7 +22,7 @@ class VerifyWarmedRangeJob implements ShouldQueue
     use Queueable;
 
     /** @param list<int> $languageIds */
-    public function __construct(public string $from, public string $to, public array $languageIds) {}
+    public function __construct(public string $from, public string $to, public array $languageIds, public string $jobLabel = 'Monthly pre-cache') {}
 
     public function handle(ReadingStore $store): void
     {
@@ -41,19 +41,20 @@ class VerifyWarmedRangeJob implements ShouldQueue
         }
 
         if ($missing === []) {
-            Log::info('Readings: monthly pre-cache verified', ['from' => $this->from, 'to' => $this->to]);
+            Log::info('Readings: pre-cache verified', ['job' => $this->jobLabel, 'from' => $this->from, 'to' => $this->to]);
 
             return;
         }
 
         $errors = Cache::store(config('readings.cache.store'))->get(ReadingCacheKey::warmErrors(), []);
-        Log::critical('Readings: monthly pre-cache incomplete', ['missing' => count($missing), 'from' => $this->from, 'to' => $this->to]);
+        Log::critical('Readings: pre-cache incomplete', ['job' => $this->jobLabel, 'missing' => count($missing), 'from' => $this->from, 'to' => $this->to]);
 
         Mail::to(config('readings.alerts.email'))->send(new ReadingsWarmFailed(
             'some days could not be stored',
             "{$this->from} to {$this->to}",
             $missing,
             $errors,
+            $this->jobLabel,
         ));
     }
 }

@@ -8,25 +8,19 @@ use App\Models\DailyReading;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
-/** Database persistence for stored days. Rows never expire. */
+/** Database persistence for stored days. Rows never expire. $bibleId 0 is the language's default Bible. */
 class ReadingStore
 {
-    public function find(CarbonImmutable $date, Language $language): ?DailyReadingDto
+    public function find(CarbonImmutable $date, Language $language, int $bibleId = 0): ?DailyReadingDto
     {
-        $row = DailyReading::query()
-            ->whereDate('date', $date->toDateString())
-            ->where('language', $language->value)
-            ->first();
+        $row = $this->query($date, $language, $bibleId)->first();
 
-        return $row === null ? null : DailyReadingDto::fromPayload($date, $language, $row->source, $row->payload);
+        return $row === null ? null : DailyReadingDto::fromPayload($date, $language, $row->source, $row->payload, $bibleId);
     }
 
-    public function has(CarbonImmutable $date, Language $language): bool
+    public function has(CarbonImmutable $date, Language $language, int $bibleId = 0): bool
     {
-        return DailyReading::query()
-            ->whereDate('date', $date->toDateString())
-            ->where('language', $language->value)
-            ->exists();
+        return $this->query($date, $language, $bibleId)->exists();
     }
 
     /** Persists a day. An empty day never replaces (or creates) a stored one. */
@@ -37,7 +31,7 @@ class ReadingStore
         }
 
         DailyReading::query()->updateOrCreate(
-            ['date' => $dto->date->toDateString(), 'language' => $dto->language->value],
+            ['date' => $dto->date->toDateString(), 'language' => $dto->language->value, 'bible_id' => $dto->bibleId],
             [
                 'coptic_date' => sprintf('%d/%d/%d', $dto->copticDate->day, $dto->copticDate->month->value, $dto->copticDate->year),
                 'payload' => $dto->toPayload(),
@@ -49,11 +43,12 @@ class ReadingStore
         return true;
     }
 
-    /** @return array{first: ?string, last: ?string, count: int} */
+    /** Default-Bible days only: this is what the warm-up and the health check measure. */
     public function range(Language $language): array
     {
         $row = DailyReading::query()
             ->where('language', $language->value)
+            ->where('bible_id', 0)
             ->select([DB::raw('MIN(date) as first'), DB::raw('MAX(date) as last'), DB::raw('COUNT(*) as total')])
             ->first();
 
@@ -69,6 +64,7 @@ class ReadingStore
     {
         $stored = DailyReading::query()
             ->where('language', $language->value)
+            ->where('bible_id', 0)
             ->whereDate('date', '>=', $from->toDateString())
             ->whereDate('date', '<', $from->addDays($limit)->toDateString())
             ->pluck('date')
@@ -81,5 +77,13 @@ class ReadingStore
         }
 
         return $days;
+    }
+
+    private function query(CarbonImmutable $date, Language $language, int $bibleId)
+    {
+        return DailyReading::query()
+            ->whereDate('date', $date->toDateString())
+            ->where('language', $language->value)
+            ->where('bible_id', $bibleId);
     }
 }

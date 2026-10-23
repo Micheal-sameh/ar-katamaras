@@ -6,7 +6,7 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 
-/** Sent when the monthly pre-cache could not store every day, or crashed. */
+/** Sent when a pre-cache run (weekly, daily catch-up or monthly) could not store every day, or crashed. */
 class ReadingsWarmFailed extends Mailable
 {
     /**
@@ -18,11 +18,12 @@ class ReadingsWarmFailed extends Mailable
         public string $range,
         public array $missing = [],
         public array $errors = [],
+        public string $job = 'Monthly pre-cache',
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: '[Readings] Monthly pre-cache failed: '.$this->reason);
+        return new Envelope(subject: '[Readings] '.$this->job.' failed: '.$this->reason);
     }
 
     public function content(): Content

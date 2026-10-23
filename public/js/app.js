@@ -6,7 +6,7 @@
 
   // ---------------------------------------------------------------- config
   const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '/api/readings'; // set in js/config.js
-  const DEMO = new URLSearchParams(location.search).has('demo');
+  const DEMO = !!(window.APP_CONFIG && window.APP_CONFIG.ALLOW_DEMO) && new URLSearchParams(location.search).has('demo');
   const STORE_PREFIX = 'reading:';
   const STORE_MAX_DAYS = 60;
   const FONT_MIN = 17;
@@ -34,6 +34,8 @@
       errorTitle: 'تعذر تحميل القراءات', errorBody: 'لا توجد نسخة محفوظة لهذا اليوم، وتعذر الاتصال بالخادم. حاول مرة أخرى أو اختر يومًا آخر.',
       emptyTitle: 'لا توجد قراءات لهذا اليوم', emptyBody: 'يمكنك اختيار يوم آخر.',
       slowLoading: 'نجلب قراءات هذا اليوم لأول مرة، وقد يستغرق ذلك بضع ثوانٍ…',
+      chapter: 'الأصحاح', bibleLabel: 'نسخة الكتاب المقدس', bibleDefault: '(الافتراضية)',
+      busyTitle: 'الطلبات كثيرة الآن', busyBody: 'سنحاول مرة أخرى بعد لحظات تلقائيًا.', rateBanner: 'الطلبات كثيرة الآن — تعرض القراءات المحفوظة وسنحاول مجددًا بعد قليل',
       rangeTitle: 'هذا التاريخ غير متاح', rangeBody: 'القراءات متاحة لمدة سنة قبل اليوم وسنة بعده. اختر تاريخًا أقرب.',
       retry: 'إعادة المحاولة', loading: 'جارٍ تحميل القراءات', openReadings: 'فتح قراءات اليوم', todayMark: 'اليوم', selectedMark: 'المحدد',
       prevMonth: 'الشهر السابق', nextMonth: 'الشهر التالي', mainNav: 'التنقل الرئيسي', yearSuffix: 'ش', dayReadings: 'قراءات اليوم',
@@ -50,6 +52,8 @@
       errorTitle: 'Could not load readings', errorBody: 'There is no saved copy for this day and the server cannot be reached. Try again or pick another day.',
       emptyTitle: 'No readings for this day', emptyBody: 'Choose another day.',
       slowLoading: 'Fetching this day for the first time. It can take a few seconds…',
+      chapter: 'Chapter', bibleLabel: 'Bible version', bibleDefault: '(default)',
+      busyTitle: 'Too many requests right now', busyBody: 'We will try again automatically in a moment.', rateBanner: 'Too many requests right now: showing saved readings, trying again shortly',
       rangeTitle: 'This date is not available', rangeBody: 'Readings are available from one year before to one year after today. Pick a closer date.',
       retry: 'Try again', loading: 'Loading readings', openReadings: "Open day's readings", todayMark: 'Today', selectedMark: 'Selected',
       prevMonth: 'Previous month', nextMonth: 'Next month', mainNav: 'Main navigation', yearSuffix: 'AM', dayReadings: 'Daily readings',
@@ -100,9 +104,10 @@
     date: todayISO(),
     calMonth: null, // {y, m} (m 0-based); null = follow selected date
     data: null,
-    status: 'loading', // loading | ok | error | range | empty
+    status: 'loading', // loading | ok | error | range | busy | empty
     errorMessage: '', // the server's own (already translated) message for a 503
     slow: false, // loading has taken longer than a few seconds
+    rateLimited: false, // the server asked us to slow down (HTTP 429)
     fromStore: false,
     online: navigator.onLine,
     open: -1,
@@ -144,12 +149,13 @@
         introduction: str(sub.introduction),
         readings: (sub.readings || []).map((r) => ({
           title: str(r.title),
+          label: str(r.label), // "Psalm" / "Gospel", for sub-sections holding several readings
           introduction: str(r.introduction),
           conclusion: str(r.conclusion),
           passages: (r.passages || []).map((ps) => ({
             ref: str(ps.ref),
             book: str(ps.bookTranslation),
-            verses: (ps.verses || []).map((v) => ({ number: v.number, text: str(v.text) })),
+            verses: (ps.verses || []).map((v) => ({ number: v.number, text: str(v.text), chapter: Number(v.chapter) || 0 })),
           })),
           // the server already sends plain-text paragraphs; html (demo data only) is stripped here
           paragraphs: Array.isArray(r.paragraphs) ? r.paragraphs.map(str).filter(Boolean) : htmlToParagraphs(r.html),
@@ -157,7 +163,8 @@
       })).filter((sub) => sub.readings.length),
     })).filter((s) => s.subSections.length);
     if (!sections.length) return null;
-    return { date: str(p.date), copticDate: p.copticDate || null, sections: placeSynaxarium(sections) };
+    const bibles = Array.isArray(p.bibles) ? p.bibles.map((b) => ({ id: Number(b.id), name: str(b.name), default: !!b.default })) : [];
+    return { date: str(p.date), copticDate: p.copticDate || null, bible: p.bible ? Number(p.bible.id) : 0, bibles, sections: placeSynaxarium(sections) };
   }
 
   /** The server sends the Synaxarium as its own section; the Liturgy reads in order: Paul, Catholicon, Praxis, Synaxarium, Psalm & Gospel. */
@@ -180,7 +187,11 @@
     return (doc.body.textContent || '').split(/\n\s*\n/).map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
   }
 
-  const storeKey = (iso, lang) => `${STORE_PREFIX}${lang}:${iso}`;
+  // The chosen Bible version per language (0 = the default one). Only offered when the server lists several.
+  const bibleChoices = (() => { try { return JSON.parse(store.get('bibles', '{}')) || {}; } catch (e) { return {}; } })();
+  const bibleFor = (lang) => Number(bibleChoices[lang]) || 0;
+  const readingUrl = (iso, lang) => `${API_BASE}/${iso}?lang=${lang}${bibleFor(lang) ? `&bible=${bibleFor(lang)}` : ''}`;
+  const storeKey = (iso, lang) => `${STORE_PREFIX}${lang}${bibleFor(lang) ? `b${bibleFor(lang)}` : ''}:${iso}`;
   function readStored(iso, lang) {
     try { return normalize(JSON.parse(store.get(storeKey(iso, lang), 'null'))); } catch (e) { return null; }
   }
@@ -200,10 +211,11 @@
 
   async function fetchDay(iso, lang) {
     if (DEMO) return window.DemoReadings.build(iso, lang);
-    const res = await fetch(`${API_BASE}/${iso}?lang=${lang}`, { headers: { Accept: 'application/json' } });
+    const res = await fetch(readingUrl(iso, lang), { headers: { Accept: 'application/json' } });
     if (!res.ok) {
       const err = new Error(`HTTP ${res.status}`);
       err.status = res.status;
+      if (res.status === 429) err.retryAfter = clamp(parseInt(res.headers.get('Retry-After'), 10) || 30, 5, 120);
       if (res.status === 503) { // "readings unavailable": the server writes this message in the visitor's language
         try {
           const body = await res.json();
@@ -257,10 +269,22 @@
         return;
       }
       writeStored(date, lang, raw); // never store an empty/invalid response
+      const bannerWasShown = state.rateLimited || state.fromStore;
+      state.rateLimited = false;
+      state.fromStore = false;
       if (!stored || JSON.stringify(raw) !== storedRaw) { showDay(data, false); render(); }
+      else if (bannerWasShown) render(); // same text as the saved copy, but the "busy / offline" banner must go
       prefetchNeighbours(date, lang);
     } catch (e) {
       if (token !== loadToken) return;
+      if (e && e.status === 429) { // the server asked us to slow down: wait, then try again by ourselves
+        state.rateLimited = true;
+        pauseRequests(e.retryAfter);
+        setTimeout(() => { if (token === loadToken) load(); }, (e.retryAfter + 1) * 1000);
+        if (!stored) state.status = 'busy';
+        render();
+        return;
+      }
       if (stored) { state.fromStore = true; render(); return; } // offline / server down: keep the saved copy
       if (e && e.status === 422) state.status = 'range';
       else { state.status = 'error'; state.errorMessage = (e && e.serverMessage) || ''; }
@@ -271,13 +295,16 @@
   // Quietly fetch the days either side so stepping through the calendar is instant.
   // This also asks the server for them, so the slow "first time" fetch happens before anyone waits for it.
   const prefetching = new Set();
+  let pausedUntil = 0;
+  const pauseRequests = (seconds) => { pausedUntil = Date.now() + seconds * 1000; };
   async function prefetch(iso, lang) {
-    if (DEMO || !navigator.onLine || (navigator.connection && navigator.connection.saveData)) return;
+    if (DEMO || Date.now() < pausedUntil || !navigator.onLine || (navigator.connection && navigator.connection.saveData)) return;
     const key = storeKey(iso, lang);
     if (prefetching.has(key) || readStored(iso, lang)) return;
     prefetching.add(key);
     try {
-      const res = await fetch(`${API_BASE}/${iso}?lang=${lang}`, { headers: { Accept: 'application/json' }, priority: 'low' });
+      const res = await fetch(readingUrl(iso, lang), { headers: { Accept: 'application/json' }, priority: 'low' });
+      if (res.status === 429) pauseRequests(clamp(parseInt(res.headers.get('Retry-After'), 10) || 30, 5, 120));
       if (res.ok) {
         const raw = await res.json();
         if (normalize(raw)) writeStored(iso, lang, raw);
@@ -285,7 +312,7 @@
     } catch (e) { /* best effort only */ } finally { prefetching.delete(key); }
   }
   function prefetchNeighbours(iso, lang) {
-    setTimeout(() => { prefetch(addDays(iso, 1), lang); prefetch(addDays(iso, -1), lang); }, 800);
+    setTimeout(() => prefetch(addDays(iso, 1), lang), 800); // one request, not two: the rate limit is per visitor
   }
   // ---------------------------------------------------------------- preferences
   function applyTheme() {
@@ -388,12 +415,19 @@
 
   function readingItem(r, sub) {
     let out = '<div class="reading-item">';
-    if (r.title && r.title !== sub.title) out += `<h3>${esc(r.title)}</h3>`;
+    const heading = r.title && r.title !== sub.title ? r.title : (sub.readings.length > 1 ? r.label : '');
+    if (heading) out += `<h3>${esc(heading)}</h3>`;
     if (r.introduction) out += `<p class="reading-intro">${esc(r.introduction)}</p>`;
     r.passages.forEach((p) => {
       const ref = [p.book, p.ref].filter(Boolean).join(' ');
       if (ref) out += `<span class="reference-chip">${esc(ref)}</span>`;
-      out += `<div class="scripture">${p.verses.map((v) => `<div class="verse-row">${v.number ? `<sup>${esc(num(v.number))}</sup>` : ''}<span>${esc(v.text)}</span></div>`).join('')}</div>`;
+      let chapter = 0;
+      out += `<div class="scripture">${p.verses.map((v) => {
+        // a passage that runs into the next chapter (3:22 to 4:2) gets a small marker, so the numbers do not look repeated
+        const mark = v.chapter && chapter && v.chapter !== chapter ? `<div class="chapter-mark">${esc(t().chapter)} ${esc(num(v.chapter))}</div>` : '';
+        if (v.chapter) chapter = v.chapter;
+        return `${mark}<div class="verse-row">${v.number ? `<sup>${esc(num(v.number))}</sup>` : ''}<span>${esc(v.text)}</span></div>`;
+      }).join('')}</div>`;
     });
     if (r.paragraphs.length) out += `<div class="plain-copy">${r.paragraphs.map((x) => `<p>${esc(x)}</p>`).join('')}</div>`;
     if (r.conclusion) out += `<p class="reading-ending">${esc(r.conclusion)}</p>`;
@@ -484,15 +518,16 @@
     }
     const isErr = state.status === 'error';
     const isRange = state.status === 'range';
-    const title = isRange ? tr.rangeTitle : isErr ? tr.errorTitle : tr.emptyTitle;
-    const body = isRange ? tr.rangeBody : isErr ? (state.errorMessage || tr.errorBody) : tr.emptyBody;
+    const isBusy = state.status === 'busy';
+    const title = isBusy ? tr.busyTitle : isRange ? tr.rangeTitle : isErr ? tr.errorTitle : tr.emptyTitle;
+    const body = isBusy ? tr.busyBody : isRange ? tr.rangeBody : isErr ? (state.errorMessage || tr.errorBody) : tr.emptyBody;
     return `<div class="empty-state"><span class="empty-icon">${icon('calendar')}</span><strong>${esc(title)}</strong><p>${esc(body)}</p>
-      <div class="component-row">${isErr ? button({ act: 'retry', variant: 'primary', label: tr.retry, ic: icon('refresh', 17) }) : ''}${button({ act: 'nav', variant: 'soft', label: tr.selectDate, data: 'data-screen="calendar"' })}</div></div>`;
+      <div class="component-row">${isErr || isBusy ? button({ act: 'retry', variant: 'primary', label: tr.retry, ic: icon('refresh', 17) }) : ''}${button({ act: 'nav', variant: 'soft', label: tr.selectDate, data: 'data-screen="calendar"' })}</div></div>`;
   }
 
   function banner() {
     const tr = t();
-    const msg = !state.online ? tr.offlineBanner : state.fromStore ? tr.savedBanner : '';
+    const msg = !state.online ? tr.offlineBanner : state.rateLimited ? tr.rateBanner : state.fromStore ? tr.savedBanner : '';
     return msg ? `<div class="banner" role="status">${icon('wifi', 18)}<span>${esc(msg)}</span>${button({ act: 'retry', variant: 'ghost', title: tr.retry, ic: icon('refresh', 16) })}</div>` : '';
   }
 
@@ -531,6 +566,15 @@
     return `<main class="content-page text-page"><div class="ornament"><span></span>${icon('cross', 18)}<span></span></div>${banner()}${inner}<div class="ornament bottom"><span></span>${icon('cross', 14)}<span></span></div></main>`;
   }
 
+  /** The Bible version picker. The list comes from the server, so it only appears when there is a choice. */
+  function bibleRow(tr) {
+    const list = state.data && state.data.bibles ? state.data.bibles : [];
+    if (list.length < 2) return '';
+    const chosen = bibleFor(state.lang) || (list.find((b) => b.default) || list[0]).id;
+    const options = list.map((b) => `<option value="${b.id}"${b.id === chosen ? ' selected' : ''}>${esc(b.name)}${b.default ? ` ${esc(tr.bibleDefault)}` : ''}</option>`).join('');
+    return `<div class="setting-row"><div><strong>${esc(tr.bibleLabel)}</strong></div><select class="font-select" aria-label="${esc(tr.bibleLabel)}" data-input="bible">${options}</select></div>`;
+  }
+
   function settingsScreen() {
     const tr = t();
     const seg = (items) => `<div class="segmented">${items.map(([act, label, active, ic, data]) => button({ act, label, active, ic: ic || '', data })).join('')}</div>`;
@@ -539,6 +583,7 @@
       <div class="settings-card">
         <div class="setting-row"><div><strong>${esc(tr.langLabel)}</strong><small>${isAr() ? 'العربية' : 'English'}</small></div>
           ${seg([['setLang', 'العربية', isAr(), '', 'data-v="ar"'], ['setLang', 'English', !isAr(), '', 'data-v="en"']])}</div>
+        ${bibleRow(tr)}
         <div class="setting-row"><div><strong>${esc(tr.fontType)}</strong></div>
           <select class="font-select" aria-label="${esc(tr.fontType)}" data-input="family">${Object.entries(FONT_FAMILIES).map(([k, [name]]) => `<option value="${k}"${k === state.fontFamily ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></div>
         <div class="setting-row stacked"><div><strong>${esc(tr.fontSize)}</strong><small>${num(state.fontSize)}px</small></div>
@@ -662,6 +707,14 @@
   });
   document.addEventListener('input', (e) => {
     if (e.target.dataset && e.target.dataset.input === 'family') setFamily(e.target.value);
+    if (e.target.dataset && e.target.dataset.input === 'bible') {
+      const list = (state.data && state.data.bibles) || [];
+      const picked = Number(e.target.value);
+      const chosen = list.find((b) => b.id === picked);
+      bibleChoices[state.lang] = chosen && chosen.default ? 0 : picked; // the default Bible is stored as 0
+      store.set('bibles', JSON.stringify(bibleChoices));
+      load();
+    }
     if (e.target.dataset && e.target.dataset.input === 'speed') {
       setSpeed(Number(e.target.value));
       const small = e.target.closest('.setting-row').querySelector('small');

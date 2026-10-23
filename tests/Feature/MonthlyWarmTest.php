@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Contracts\ReadingsApiClient;
+use App\DTOs\DailyReadingDto;
+use App\Enums\Language;
 use App\Jobs\RetryWarmDayJob;
 use App\Jobs\VerifyWarmedRangeJob;
 use App\Mail\ReadingsWarmFailed;
@@ -140,12 +143,13 @@ class MonthlyWarmTest extends TestCase
     {
         Mail::fake();
         $this->travelToDay('2026-10-25');
-        $this->mock(ReadingWarmer::class, function ($mock) {
-            $mock->shouldReceive('monthWindow')->andReturn([
-                'from' => CarbonImmutable::parse('2026-10-25'),
-                'to' => CarbonImmutable::parse('2026-11-30'),
-            ]);
-            $mock->shouldReceive('warmRange')->andThrow(new \RuntimeException('database is locked'));
+        // an unexpected failure (not just an unreachable API) while running the job
+        $this->app->bind(ReadingsApiClient::class, fn () => new class implements ReadingsApiClient
+        {
+            public function fetch(CarbonImmutable $date, Language $language, int $bibleId = 0): DailyReadingDto
+            {
+                throw new \RuntimeException('database is locked');
+            }
         });
 
         $this->artisan('readings:warm-month')->assertFailed();

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\Language;
+use App\Services\BibleCatalog;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,27 @@ class ShowReadingRequest extends FormRequest
                 'before_or_equal:'.$today->addDays(config('readings.http.future_days'))->toDateString(),
             ],
             'lang' => ['nullable', 'string', Rule::in($supported)],
+            // Checked against the allow-list for the chosen language in withValidator().
+            'bible' => ['nullable', 'integer', 'min:1'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            if ($validator->errors()->isNotEmpty() || ! $this->filled('bible')) {
+                return;
+            }
+            $language = Language::fromCode((string) $this->input('lang')) ?? config('readings.default_language');
+            if (! app(BibleCatalog::class)->isAllowed($language, (int) $this->input('bible'))) {
+                $validator->errors()->add('bible', 'This Bible version is not available for the chosen language.');
+            }
+        });
+    }
+
+    public function bibleId(): int
+    {
+        return (int) ($this->validated('bible') ?? 0);
     }
 
     public function readingDate(): CarbonImmutable

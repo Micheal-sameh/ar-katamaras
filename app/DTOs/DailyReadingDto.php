@@ -8,13 +8,17 @@ use Carbon\CarbonImmutable;
 
 final readonly class DailyReadingDto
 {
-    /** @param list<SectionDto> $sections */
+    /**
+     * @param  list<SectionDto>  $sections
+     * @param  int  $bibleId  0 = the language's default Bible
+     */
     public function __construct(
         public CarbonImmutable $date,
         public Language $language,
         public CopticDateDto $copticDate,
         public array $sections,
         public ReadingSource $source,
+        public int $bibleId = 0,
     ) {}
 
     /** True when there is no readable text at all. Such a day is never stored or cached. */
@@ -31,10 +35,10 @@ final readonly class DailyReadingDto
 
     public function withSource(ReadingSource $source): self
     {
-        return new self($this->date, $this->language, $this->copticDate, $this->sections, $source);
+        return new self($this->date, $this->language, $this->copticDate, $this->sections, $source, $this->bibleId);
     }
 
-    /** Payload stored in daily_readings.payload / the cache. The source is stored separately. */
+    /** Payload stored in daily_readings.payload / the cache. The source and Bible are stored separately. */
     public function toPayload(): array
     {
         return [
@@ -48,6 +52,7 @@ final readonly class DailyReadingDto
         Language $language,
         ReadingSource $source,
         array $payload,
+        int $bibleId = 0,
     ): self {
         return new self(
             $date,
@@ -55,6 +60,7 @@ final readonly class DailyReadingDto
             CopticDateDto::fromArray($payload['copticDate']),
             array_map(SectionDto::fromArray(...), $payload['sections'] ?? []),
             $source,
+            $bibleId,
         );
     }
 }

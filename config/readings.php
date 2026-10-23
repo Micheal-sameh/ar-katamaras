@@ -43,6 +43,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Bible versions a visitor may choose (Katameros bibleId), per language
+    |--------------------------------------------------------------------------
+    | Only ids listed here are ever sent to the API. Today only Arabic has two versions.
+    */
+    'bibles' => [
+        Language::Arabic->value => [
+            'default' => 11,
+            'available' => [11 => 'الكتاب المقدس، فان دايك', 3 => 'Arabic'],
+        ],
+        Language::English->value => ['default' => 2, 'available' => [2 => 'NKJV']],
+        Language::French->value => ['default' => 1, 'available' => [1 => 'Louis Segond 1910']],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Weekly pre-cache (readings:warm)
     |--------------------------------------------------------------------------
     */
@@ -59,6 +74,28 @@ return [
             'time' => env('READINGS_MONTHLY_TIME', '03:30'),
             'months_ahead' => (int) env('READINGS_MONTHLY_MONTHS_AHEAD', 1),
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Health check (GET /api/health, readings:health): point an uptime monitor at it
+    |--------------------------------------------------------------------------
+    | The scheduler and the queue worker each leave a heartbeat every minute. If one goes quiet for
+    | longer than these limits, nothing else can alert you (nothing is running), so the check fails.
+    */
+    'health' => [
+        'scheduler_max_age' => (int) env('READINGS_HEALTH_SCHEDULER_MAX_AGE', 300),  // seconds
+        'queue_max_age' => (int) env('READINGS_HEALTH_QUEUE_MAX_AGE', 600),          // seconds
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database backups (readings:backup, SQLite only)
+    |--------------------------------------------------------------------------
+    */
+    'backup' => [
+        'directory' => env('READINGS_BACKUP_DIR', storage_path('app/backups')),
+        'keep' => (int) env('READINGS_BACKUP_KEEP', 14), // newest copies to keep
     ],
 
     /*

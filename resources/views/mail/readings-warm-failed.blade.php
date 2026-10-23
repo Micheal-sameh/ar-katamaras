@@ -1,4 +1,4 @@
-The monthly readings pre-cache did not finish cleanly.
+The readings pre-cache job "{{ $job }}" did not finish cleanly.
 
 Problem: {{ $reason }}
 Range:   {{ $range }}
@@ -24,6 +24,6 @@ What it means: visitors asking for those days will wait for a live fetch from th
 and will see "readings unavailable" if that API is down at that moment.
 
 What to do: check that the server can reach https://api.katameros.app, then run
-  php artisan readings:warm-month
+  php artisan readings:warm-month   (or readings:warm for the next 7 days)
 (in Docker: docker compose exec app php artisan readings:warm-month)
 Days that are already stored are skipped, so it is safe to run again.

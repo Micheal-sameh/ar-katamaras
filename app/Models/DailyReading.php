@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DailyReading extends Model
 {
-    protected $fillable = ['date', 'language', 'coptic_date', 'payload', 'source', 'fetched_at'];
+    protected $fillable = ['date', 'language', 'bible_id', 'coptic_date', 'payload', 'source', 'fetched_at'];
 
     protected function casts(): array
     {

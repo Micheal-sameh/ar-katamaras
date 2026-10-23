@@ -2,11 +2,14 @@
 
 namespace App\DTOs;
 
+use App\Enums\ReadingType;
+
 final readonly class ReadingDto
 {
     /**
      * @param  list<PassageDto>  $passages
      * @param  list<string>  $paragraphs  plain-text paragraphs (the Synaxarium text); never HTML
+     * @param  ?ReadingType  $type  what this reading is (the Psalm and the Gospel share one sub-section)
      */
     public function __construct(
         public string $title,
@@ -14,6 +17,7 @@ final readonly class ReadingDto
         public ?string $conclusion,
         public array $passages,
         public array $paragraphs = [],
+        public ?ReadingType $type = null,
     ) {}
 
     public function hasContent(): bool
@@ -34,6 +38,7 @@ final readonly class ReadingDto
     {
         return [
             'title' => $this->title,
+            'type' => $this->type?->value,
             'introduction' => $this->introduction,
             'conclusion' => $this->conclusion,
             'passages' => array_map(fn (PassageDto $p) => $p->toArray(), $this->passages),
@@ -49,6 +54,7 @@ final readonly class ReadingDto
             $data['conclusion'] ?? null,
             array_map(PassageDto::fromArray(...), $data['passages'] ?? []),
             array_values(array_map('strval', $data['paragraphs'] ?? [])),
+            ReadingType::tryFrom((string) ($data['type'] ?? '')),
         );
     }
 }

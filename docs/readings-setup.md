@@ -49,16 +49,22 @@ Useful commands:
 
 | Command | Purpose |
 |---|---|
-| `readings:warm {--days=7} {--lang=*}` | Fetch and store missing days. Exit code is non-zero if the window is still incomplete. |
+| `readings:warm {--days=7} {--lang=*}` | Fetch and store missing days. Exit code is non-zero if the window is still incomplete. Emails you if days stay missing. |
+| `readings:warm-month {--months=1} {--lang=*}` | Store the rest of this month plus the next month (also scheduled, see below). |
+| `readings:refresh {--days=7 or --from= --to=} {--lang=*}` | Fetch days again and replace the stored copy, to pick up corrections made upstream. A day that fails keeps its stored copy. |
 | `readings:status` | Stored range per language, and consecutive days stored from today. |
+| `readings:health {--only=scheduler,queue,...}` | Database, cache, scheduler, queue worker and days stored ahead. Exit code 1 when failing. |
+| `readings:backup` | Write a consistent copy of the SQLite database to `storage/app/backups` (newest 14 kept). |
 
 **Known local issue:** if `php artisan readings:warm` fails with `cURL error 77: error adding trust anchors`, PHP's `curl.cainfo` in `php.ini` points to a `cacert.pem` that does not exist. Download a current `cacert.pem` from curl.se, save it, and set `curl.cainfo` and `openssl.cafile` to its path.
 
 ## Frontend
 
 - `public/js/config.js` holds `API_BASE`. It is the only setting to change.
-- `?demo=1` shows built-in sample data without a backend.
-- Change the `VERSION` constant in `public/sw.js` when you ship new frontend files, so installed copies refresh.
+- Demo mode (`/?demo=1`, sample readings without a backend) is off by default. Set `ALLOW_DEMO: true` in `config.js` on a developer machine to use it.
+- New releases reach visitors without a version bump: the service worker asks the server for app files first and only falls back to its saved copy when offline or slow.
+- Fonts are served from `public/fonts/` (Amiri, Noto Naskh, Scheherazade New, Cairo, Tajawal, Inter, Noto Sans Arabic; SIL Open Font License, licence files included). Nothing is requested from Google.
+- The app prefetches the next day, shows a saved copy instantly while it checks the server, and backs off by itself when the server answers "too many requests".
 
 ## Packaging with Tauri (desktop)
 
@@ -72,7 +78,7 @@ The frontend is static files, so Tauri wraps `public/` directly.
 3. Copy the contents of `public/` (`index.html`, `css/`, `js/`, `icons/`, `manifest.json`) into that project's frontend folder (`src/` or whatever `frontendDist` in `src-tauri/tauri.conf.json` points to). Do not copy `sw.js`; the desktop app does not need it.
 4. Edit the copied `js/config.js` so `API_BASE` is the absolute URL of your Laravel server, for example `http://192.168.1.10/api/readings`. In Tauri the page origin is not your server, so a relative URL would fail.
 5. If the server is HTTP rather than HTTPS, allow it in `tauri.conf.json` (CSP `connect-src`), for example:
-   `"csp": "default-src 'self'; connect-src 'self' http://192.168.1.10; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com"`.
+   `"csp": "default-src 'self'; connect-src 'self' http://192.168.1.10; style-src 'self' 'unsafe-inline'; font-src 'self'"`.
 6. Run `npm run tauri dev` to test and `npm run tauri build` to produce the installer (`.msi` / `.exe`, `.dmg`, `.AppImage`).
 7. CORS: Laravel already answers cross-origin requests for `api/*` (any origin). To restrict it, publish the config with `php artisan config:publish cors` and list your origins (`http://tauri.localhost`, `tauri://localhost`).
 8. For offline use inside the desktop app, the app already keeps every viewed day in localStorage, and your on-prem server holds the stored days.
@@ -98,7 +104,7 @@ The app is a public, read-only site. There are no logins, cookies or write endpo
    add_header X-Content-Type-Options "nosniff" always;
    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
    add_header Strict-Transport-Security "max-age=31536000" always;
-   add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'" always;
+   add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'" always;
    location = /sw.js { add_header Cache-Control "no-cache" always; }
    ```
 6. **Backups:** the database holds every stored day. Back it up (a nightly copy of `database/database.sqlite`, or `mysqldump`).
@@ -108,7 +114,7 @@ The app is a public, read-only site. There are no logins, cookies or write endpo
 
 **Before launch**
 - Confirm the licence of the Katameros API for public use. The API's terms decide whether you may cache and re-serve its text.
-- The page loads fonts from Google Fonts. For a stricter privacy stance, self-host Amiri, Inter and Noto Sans Arabic and drop the Google links (the CSP above then no longer needs the two Google entries).
+- Fonts are self-hosted, so visitors' browsers contact nobody but your server.
 
 Running in Docker instead: see `docs/docker.md` (one `docker compose up -d`).
 
@@ -127,3 +133,21 @@ php artisan tinker --execute="Mail::raw('test', fn(\$m) => \$m->to(config('readi
 ```
 
 The queue worker must be running (it runs the retries and the check). The weekly Tuesday run still only logs failures; it does not send email.
+
+## Bible versions
+
+The Katameros API offers one Bible for English (NKJV) and French (Louis Segond 1910), and two for Arabic: Van Dyck (default) and one called "Arabic". Visitors pick one in Settings; the choice only appears when a language has more than one. Only versions listed in `config/readings.php` (`bibles`) are ever sent to the API. The pre-cache stores the default version only; another version is fetched live the first time someone asks for a day, then stored.
+
+## Monitoring: how you find out when something is broken
+
+| What can break | How you find out |
+|---|---|
+| Days cannot be fetched (weekly, daily catch-up or monthly run) | One email to `READINGS_ALERT_EMAIL` about 23 minutes after the run, listing the missing days. |
+| A pre-cache job crashes | An email straight away, with the error. |
+| The server missed the monthly run on the 25th | From the 26th, a daily 05:00 run repeats it until next month is stored. |
+| **The scheduler or the queue worker stops** (nothing is running, so nothing can send an email) | `GET /api/health` returns 503, and the Docker containers show `unhealthy`. Point an uptime monitor at it (UptimeRobot, Better Stack, healthchecks.io; free tiers email you). |
+| The database is corrupted or lost | Nightly copies in `storage/app/backups` (02:30 Cairo, newest 14). Copy that folder off the machine regularly. |
+
+`GET /api/health` answers `{"status":"ok"|"failing","checks":{...}}` with HTTP 200 or 503. It checks the database, the cache, a heartbeat the scheduler leaves every minute, a heartbeat that only a running queue worker can leave, and that at least 3 days are stored ahead for each language. Give the monitor a 5 minute interval; the first minutes after a restart can report failing until the heartbeats start.
+
+The schedule (Cairo time): Tuesday 03:00 warm-up; daily 04:00 catch-up (only while incomplete); Saturday 03:00 refresh of the coming week; 25th 03:30 monthly pre-cache; daily 05:00 monthly catch-up from the 26th; daily 02:30 backup; every minute heartbeats.

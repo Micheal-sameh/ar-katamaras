@@ -11,7 +11,7 @@ class ReadingController extends Controller
     public function show(ShowReadingRequest $request, ReadingService $readings): DailyReadingResource
     {
         return new DailyReadingResource(
-            $readings->getForDate($request->readingDate(), $request->language()),
+            $readings->getForDate($request->readingDate(), $request->language(), $request->bibleId()),
         );
     }
 }

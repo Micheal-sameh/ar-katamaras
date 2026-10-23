@@ -39,9 +39,10 @@ trait FakesKatameros
                                 'passages' => [[
                                     'bookTranslation' => 'كورنثوس الأولى',
                                     'ref' => '١ كورنثوس ٣: ٤–٢٣',
+                                    'bookId' => 46,
                                     'verses' => [
-                                        ['number' => 4, 'text' => 'لأنه متى قال واحد: أنا لبولس'],
-                                        ['number' => 5, 'text' => 'فمن هو بولس؟ ومن هو أبلوس؟'],
+                                        ['number' => 4, 'chapter' => 3, 'text' => 'لأنه متى قال واحد: أنا لبولس'],
+                                        ['number' => 5, 'chapter' => 3, 'text' => 'فمن هو بولس؟ ومن هو أبلوس؟'],
                                     ],
                                 ]],
                                 'html' => null,
@@ -50,17 +51,32 @@ trait FakesKatameros
                         [
                             'title' => 'المزمور والإنجيل',
                             'introduction' => null,
-                            'readings' => [[
-                                'title' => 'الإنجيل',
-                                'introduction' => null,
-                                'conclusion' => null,
-                                'passages' => [[
-                                    'bookTranslation' => 'لوقا',
-                                    'ref' => 'لوقا ١٠: ٢٥',
-                                    'verses' => [['number' => 25, 'text' => 'وإذا ناموسي قام يجربه']],
-                                ]],
-                                'html' => null,
-                            ]],
+                            'readings' => [
+                                [
+                                    'title' => null,
+                                    'introduction' => null,
+                                    'conclusion' => null,
+                                    'passages' => [[
+                                        'bookId' => 19,
+                                        'bookTranslation' => 'مزامير',
+                                        'ref' => '37:30-31',
+                                        'verses' => [['number' => 30, 'chapter' => 37, 'text' => 'فم الصديق يلهج بالحكمة']],
+                                    ]],
+                                    'html' => null,
+                                ],
+                                [
+                                    'title' => null,
+                                    'introduction' => null,
+                                    'conclusion' => null,
+                                    'passages' => [[
+                                        'bookId' => 42,
+                                        'bookTranslation' => 'لوقا',
+                                        'ref' => '16:1-12',
+                                        'verses' => [['number' => 1, 'chapter' => 16, 'text' => 'وقال أيضا لتلاميذه']],
+                                    ]],
+                                    'html' => null,
+                                ],
+                            ],
                         ],
                         // As in the real API, the Synaxarium is a sub-section of the Liturgy.
                         [
@@ -70,7 +86,7 @@ trait FakesKatameros
                                 'title' => 'نياحة القديس الأنبا زكريا',
                                 'introduction' => null,
                                 'conclusion' => null,
-                                'passages' => [],
+                                'passages' => null, // the real API sends null here
                                 'html' => '<p>في مثل هذا اليوم تنيّح القديس.</p><script>alert(1)</script><p>بركة صلواته <b>تكون</b> معنا.&nbsp;آمين.</p>',
                             ]],
                         ],

@@ -3,6 +3,8 @@
 namespace App\Http\Resources;
 
 use App\DTOs\DailyReadingDto;
+use App\Enums\ReadingType;
+use App\Services\BibleCatalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -15,6 +17,19 @@ class DailyReadingResource extends JsonResource
     {
         $dto = $this->resource;
         $payload = $dto->toPayload();
+        $catalog = app(BibleCatalog::class);
+
+        foreach ($payload['sections'] as &$section) {
+            foreach ($section['subSections'] as &$subSection) {
+                foreach ($subSection['readings'] as &$reading) {
+                    // "Psalm" / "Gospel" label for sub-sections that hold more than one reading.
+                    $reading['label'] = ReadingType::tryFrom((string) $reading['type'])?->label($dto->language);
+                }
+            }
+        }
+        unset($section, $subSection, $reading);
+
+        $bibleId = $dto->bibleId > 0 ? $dto->bibleId : $catalog->defaultId($dto->language);
 
         return [
             'date' => $dto->date->toDateString(),
@@ -23,6 +38,8 @@ class DailyReadingResource extends JsonResource
                 'monthName' => $dto->copticDate->month->label($dto->language),
                 'formatted' => $dto->copticDate->format($dto->language),
             ],
+            'bible' => ['id' => $bibleId, 'name' => $catalog->available($dto->language)[$bibleId] ?? null],
+            'bibles' => $catalog->list($dto->language), // the versions the visitor can pick from
             'sections' => $payload['sections'],
         ];
     }
