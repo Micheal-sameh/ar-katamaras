@@ -72,12 +72,14 @@ function createWindow() {
     width: 1100, height: 850, minWidth: 380, minHeight: 560,
     title: 'Avarewase Readings',
     backgroundColor: '#faf6ee',
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: false },
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
-  // Links to other sites open in the normal browser, never inside the app.
-  win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' }; });
+  // Links to other sites open in the normal browser, never inside the app. Only web addresses: other
+  // schemes (file:, custom protocols) can start programs on the computer.
+  const openExternal = (url) => { if (/^https?:\/\//i.test(url)) shell.openExternal(url); };
+  win.webContents.setWindowOpenHandler(({ url }) => { openExternal(url); return { action: 'deny' }; });
   win.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith('file://')) { event.preventDefault(); shell.openExternal(url); }
+    if (!url.startsWith('file://')) { event.preventDefault(); openExternal(url); }
   });
   show();
 }
