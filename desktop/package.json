@@ -15,15 +15,50 @@
   },
   "devDependencies": {
     "electron": "^33.2.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "png-to-ico": "^3.0.2",
+    "rcedit": "^5.0.2"
   },
   "build": {
     "appId": "com.avarewase.readings",
     "productName": "Avarewase Readings",
-    "files": ["src/**/*", "app/**/*", "package.json"],
-    "directories": { "output": "dist" },
-    "win": { "target": "nsis", "icon": "app/icons/icon-512.png" },
-    "mac": { "target": "dmg", "category": "public.app-category.lifestyle" },
-    "linux": { "target": ["AppImage"], "category": "Utility" }
-  }
+    "files": [
+      "src/**/*",
+      "app/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.lifestyle"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    },
+    "afterPack": "scripts/after-pack.js",
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "artifactName": "Avarewase-Readings-Setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "Avarewase-Readings-Portable-${version}.exe"
+    }
+  },
+  "author": "Avarewase"
 }

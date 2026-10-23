@@ -7,9 +7,9 @@ const path = require('path');
 const BASE_URL = process.env.KATAMEROS_API_URL || 'https://api.katameros.app';
 const LANGUAGE_IDS = { ar: 3, en: 2, fr: 1 };
 const BIBLES = {
-  ar: { default: 11, available: { 11: 'الكتاب المقدس، فان دايك', 3: 'Arabic' } },
-  en: { default: 2, available: { 2: 'NKJV' } },
-  fr: { default: 1, available: { 1: 'Louis Segond 1910' } },
+  ar: { default: 11, available: [[11, 'الكتاب المقدس، فان دايك'], [3, 'Arabic']] },
+  en: { default: 2, available: [[2, 'NKJV']] },
+  fr: { default: 1, available: [[1, 'Louis Segond 1910']] },
 };
 const MONTHS = {
   ar: ['توت', 'بابه', 'هاتور', 'كيهك', 'طوبه', 'أمشير', 'برمهات', 'برمودة', 'بشنس', 'بؤونة', 'أبيب', 'مسرى', 'النسيء'],
@@ -151,7 +151,7 @@ function copticDate(value, isoDate) {
 
 function bibleList(lang) {
   const bibles = BIBLES[lang];
-  return Object.entries(bibles.available).map(([id, name]) => ({ id: Number(id), name, default: Number(id) === bibles.default }));
+  return bibles.available.map(([id, name]) => ({ id, name, default: id === bibles.default }));
 }
 
 function map(json, isoDate, lang, bibleId) {
@@ -187,7 +187,7 @@ function map(json, isoDate, lang, bibleId) {
     date: isoDate,
     language: lang,
     copticDate: { ...coptic, monthName: MONTHS[lang === 'ar' ? 'ar' : 'en'][coptic.month - 1], formatted: `${coptic.day} ${MONTHS[lang === 'ar' ? 'ar' : 'en'][coptic.month - 1]} ${coptic.year}` },
-    bible: { id: effectiveBible, name: BIBLES[lang].available[effectiveBible] ?? null },
+    bible: { id: effectiveBible, name: (BIBLES[lang].available.find(([id]) => id === effectiveBible) || [])[1] ?? null },
     bibles: bibleList(lang),
     sections: hoisted,
   };
@@ -212,7 +212,7 @@ class KatamerosDirect {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(iso) || Number.isNaN(Date.parse(iso))) throw new ReadingsError('Invalid date.', 422);
     if (!LANGUAGE_IDS[lang]) throw new ReadingsError('Unknown language.', 422);
     const bibles = BIBLES[lang];
-    if (requestedBible !== 0 && !bibles.available[requestedBible]) throw new ReadingsError('Unknown Bible.', 422);
+    if (requestedBible !== 0 && !bibles.available.some(([id]) => id === requestedBible)) throw new ReadingsError('Unknown Bible.', 422);
     const bibleId = requestedBible === bibles.default ? 0 : requestedBible; // the default is stored as 0
 
     const cached = this.readCache(iso, lang, bibleId);

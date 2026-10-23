@@ -20,3 +20,11 @@ npm run dist:win     # installer in desktop/dist (use dist:mac / dist:linux on t
 By default the app asks the Katameros API directly (no Laravel server). Every day it loads is kept in its
 own cache folder (`days/` inside the app's user-data folder) and the next 14 days (Arabic) are pre-loaded at
 start, so already-seen days work offline. File > Use my own server… switches to our Laravel server instead.
+
+## Making a release for people
+`npm run dist:win` produces two files in `dist/`:
+- `Avarewase-Readings-Setup-<version>.exe`: normal installer (choose folder, desktop shortcut, uninstaller).
+- `Avarewase-Readings-Portable-<version>.exe`: one file, runs without installing (USB stick, locked-down PCs).
+
+Raise `version` in `package.json` for each new release. The files are not code-signed, so Windows SmartScreen shows
+"unknown publisher" once ("More info" then "Run anyway"); a code-signing certificate removes that.
