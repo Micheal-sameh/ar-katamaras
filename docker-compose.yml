@@ -1,0 +1,93 @@
+name: readings
+
+# Shared by app, queue and scheduler (same image, different command).
+x-app: &app
+  build:
+    context: .
+    target: app
+  image: avarewase/readings-app:latest
+  env_file: docker/app.env # copy docker/app.env.example first
+  environment: &app-env
+    APP_ENV: production
+    APP_DEBUG: "false"
+    LOG_CHANNEL: stderr # `docker compose logs` shows everything, including the "fewer than 3 days" alert
+    DB_CONNECTION: sqlite
+    DB_DATABASE: /data/database.sqlite
+    REDIS_CLIENT: phpredis
+    REDIS_HOST: redis
+    CACHE_STORE: redis
+    READINGS_CACHE_STORE: redis # cache, locks and rate limiting
+    QUEUE_CONNECTION: redis
+    SESSION_DRIVER: file
+  volumes:
+    - data:/data # SQLite database: every stored day
+    - storage:/var/www/html/storage # logs, shared by app / queue / scheduler
+  restart: unless-stopped
+  depends_on:
+    redis:
+      condition: service_healthy
+
+services:
+  app:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "true"
+    volumes:
+      - data:/data
+      - storage:/var/www/html/storage
+
+  web:
+    build:
+      context: .
+      target: web
+    image: avarewase/readings-web:latest
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      # Bound to localhost: put HTTPS in front (Cloudflare Tunnel, Caddy, nginx, certbot ...).
+      # Set BIND_ADDRESS=0.0.0.0 only if this host is reachable directly and you accept plain HTTP.
+      - "${BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/up"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Runs the queued jobs: the 1 / 5 / 15 minute retries of failed days and the check that emails you
+  # after the monthly pre-cache. Jobs that still fail after their retries land in the failed_jobs table
+  # (docker compose exec app php artisan queue:failed).
+  queue:
+    <<: *app
+    command: ["php", "artisan", "queue:work", "redis", "--queue=default", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600"]
+    stop_grace_period: 70s # let a running job finish on `docker compose stop / up -d`
+    environment:
+      <<: *app-env
+      WAIT_FOR_READY: "true"
+
+  # Fires the schedule: Tuesday 03:00 warm-up, daily 04:00 catch-up, and the 25th 03:30 monthly pre-cache.
+  scheduler:
+    <<: *app
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *app-env
+      WAIT_FOR_READY: "true"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    restart: unless-stopped
+    volumes:
+      - redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  data:
+  storage:
+  redis:

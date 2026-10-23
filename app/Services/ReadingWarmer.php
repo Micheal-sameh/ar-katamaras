@@ -23,19 +23,40 @@ class ReadingWarmer
      * a failing day never stops the others, and failures are queued for retry.
      *
      * @param  list<Language>  $languages
-     * @return array{stored: int, skipped: int, failed: list<string>}
+     * @return array{stored: int, skipped: int, failed: list<string>, errors: list<string>}
      */
     public function warm(int $days, array $languages, ?callable $sleep = null): array
     {
-        $sleep ??= fn (int $seconds) => $seconds > 0 ? sleep($seconds) : null;
-        $result = ['stored' => 0, 'skipped' => 0, 'failed' => []];
         $today = $this->calendar->today();
+
+        return $this->warmRange($today, $today->addDays(max(0, $days - 1)), $languages, $sleep);
+    }
+
+    /**
+     * Today through the end of the month that is $months months ahead (0 = the rest of this month).
+     * Used by the monthly job on the 25th: the rest of this month plus the whole next month.
+     *
+     * @return array{from: CarbonImmutable, to: CarbonImmutable}
+     */
+    public function monthWindow(int $months): array
+    {
+        $today = $this->calendar->today();
+
+        return ['from' => $today, 'to' => $today->addMonthsNoOverflow($months)->endOfMonth()->startOfDay()];
+    }
+
+    /**
+     * @param  list<Language>  $languages
+     * @return array{stored: int, skipped: int, failed: list<string>, errors: list<string>}
+     */
+    public function warmRange(CarbonImmutable $from, CarbonImmutable $to, array $languages, ?callable $sleep = null): array
+    {
+        $sleep ??= fn (int $seconds) => $seconds > 0 ? sleep($seconds) : null;
+        $result = ['stored' => 0, 'skipped' => 0, 'failed' => [], 'errors' => []];
         $pause = (int) config('readings.warm.sleep_seconds');
 
         foreach ($languages as $language) {
-            for ($i = 0; $i < $days; $i++) {
-                $date = $today->addDays($i);
-
+            for ($date = $from; $date <= $to; $date = $date->addDay()) {
                 if ($this->readings->isStored($date, $language)) {
                     $result['skipped']++;
 
@@ -50,6 +71,7 @@ class ReadingWarmer
                     }
                 } catch (ReadingsUnavailableException $e) {
                     $result['failed'][] = $this->label($date, $language);
+                    $result['errors'][] = $this->label($date, $language).': '.($e->getPrevious()?->getMessage() ?? $e->getMessage());
                     RetryWarmDayJob::dispatch($date->toDateString(), $language->value)
                         ->delay(now()->addSeconds(config('readings.warm.retry_delays')[0]));
                     $sleep($pause);

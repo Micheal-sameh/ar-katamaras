@@ -309,3 +309,5 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 @media (max-width: 900px) {
   .reading-controls > .divider { display: none; }
 }
+
+.slow-hint { margin: 0 0 var(--space-3); padding: var(--space-3) var(--space-4); border-radius: var(--radius-sm); color: var(--ink-soft); background: var(--paper-deep); font-size: 14px; }

@@ -18,12 +18,6 @@ final readonly class CopticDateDto
         return sprintf('%d %s %d', $this->day, $this->month->label($language), $this->year);
     }
 
-    /** "MM-DD" key used to match PPT files by Coptic day (e.g. "02-13"). */
-    public function dayKey(): string
-    {
-        return sprintf('%02d-%02d', $this->month->value, $this->day);
-    }
-
     public function toArray(): array
     {
         return ['day' => $this->day, 'month' => $this->month->value, 'year' => $this->year];

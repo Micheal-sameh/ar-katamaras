@@ -22,9 +22,16 @@ class ShowReadingRequest extends FormRequest
     public function rules(): array
     {
         $supported = array_map(fn (Language $l) => $l->code(), config('readings.languages'));
+        $today = CarbonImmutable::now(config('readings.timezone'));
 
         return [
-            'date' => ['required', 'date_format:Y-m-d', 'after_or_equal:2000-01-01', 'before_or_equal:'.now()->addYears(2)->toDateString()],
+            // Only a window around today: stops anyone from making the server fetch arbitrary dates.
+            'date' => [
+                'required',
+                'date_format:Y-m-d',
+                'after_or_equal:'.$today->subDays(config('readings.http.past_days'))->toDateString(),
+                'before_or_equal:'.$today->addDays(config('readings.http.future_days'))->toDateString(),
+            ],
             'lang' => ['nullable', 'string', Rule::in($supported)],
         ];
     }

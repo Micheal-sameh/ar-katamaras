@@ -33,6 +33,8 @@
       offlineBanner: 'أنت غير متصل — تعرض القراءات المحفوظة', savedBanner: 'تعذر الاتصال بالخادم — تعرض نسخة محفوظة على هذا الجهاز',
       errorTitle: 'تعذر تحميل القراءات', errorBody: 'لا توجد نسخة محفوظة لهذا اليوم، وتعذر الاتصال بالخادم. حاول مرة أخرى أو اختر يومًا آخر.',
       emptyTitle: 'لا توجد قراءات لهذا اليوم', emptyBody: 'يمكنك اختيار يوم آخر.',
+      slowLoading: 'نجلب قراءات هذا اليوم لأول مرة، وقد يستغرق ذلك بضع ثوانٍ…',
+      rangeTitle: 'هذا التاريخ غير متاح', rangeBody: 'القراءات متاحة لمدة سنة قبل اليوم وسنة بعده. اختر تاريخًا أقرب.',
       retry: 'إعادة المحاولة', loading: 'جارٍ تحميل القراءات', openReadings: 'فتح قراءات اليوم', todayMark: 'اليوم', selectedMark: 'المحدد',
       prevMonth: 'الشهر السابق', nextMonth: 'الشهر التالي', mainNav: 'التنقل الرئيسي', yearSuffix: 'ش', dayReadings: 'قراءات اليوم',
       noSynax: 'لا يوجد سنكسار لهذا اليوم', locale: 'ar-EG-u-ca-gregory', types: { vespers: 'العشية', matins: 'باكر', liturgy: 'القداس', synaxarium: 'السنكسار' },
@@ -47,6 +49,8 @@
       offlineBanner: 'You are offline — showing saved readings', savedBanner: 'Server unreachable — showing a copy saved on this device',
       errorTitle: 'Could not load readings', errorBody: 'There is no saved copy for this day and the server cannot be reached. Try again or pick another day.',
       emptyTitle: 'No readings for this day', emptyBody: 'Choose another day.',
+      slowLoading: 'Fetching this day for the first time. It can take a few seconds…',
+      rangeTitle: 'This date is not available', rangeBody: 'Readings are available from one year before to one year after today. Pick a closer date.',
       retry: 'Try again', loading: 'Loading readings', openReadings: "Open day's readings", todayMark: 'Today', selectedMark: 'Selected',
       prevMonth: 'Previous month', nextMonth: 'Next month', mainNav: 'Main navigation', yearSuffix: 'AM', dayReadings: 'Daily readings',
       noSynax: 'No Synaxarium entry for this day', locale: 'en-US', types: { vespers: 'Vespers', matins: 'Matins', liturgy: 'Liturgy', synaxarium: 'Synaxarium' },
@@ -96,7 +100,9 @@
     date: todayISO(),
     calMonth: null, // {y, m} (m 0-based); null = follow selected date
     data: null,
-    status: 'loading', // loading | ok | error | empty
+    status: 'loading', // loading | ok | error | range | empty
+    errorMessage: '', // the server's own (already translated) message for a 503
+    slow: false, // loading has taken longer than a few seconds
     fromStore: false,
     online: navigator.onLine,
     open: -1,
@@ -195,41 +201,92 @@
   async function fetchDay(iso, lang) {
     if (DEMO) return window.DemoReadings.build(iso, lang);
     const res = await fetch(`${API_BASE}/${iso}?lang=${lang}`, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`);
+      err.status = res.status;
+      if (res.status === 503) { // "readings unavailable": the server writes this message in the visitor's language
+        try {
+          const body = await res.json();
+          if (body && typeof body.message === 'string') err.serverMessage = body.message;
+        } catch (e) { /* not JSON: use the generic text */ }
+      }
+      throw err;
+    }
     return res.json();
   }
 
+  const SLOW_AFTER_MS = 4000;
   let loadToken = 0;
+
+  function showDay(data, fromStore) {
+    state.data = data;
+    state.status = 'ok';
+    state.fromStore = fromStore;
+    const li = data.sections.findIndex((s) => s.type === 'liturgy');
+    state.open = li >= 0 ? li : 0;
+    state.tabs = {};
+  }
+
   async function load() {
     const token = ++loadToken;
     const { date, lang } = state;
-    state.status = 'loading';
-    state.fromStore = false;
+    state.errorMessage = '';
+    state.slow = false;
+
+    // A copy already on this device (viewed earlier, or prefetched) shows instantly;
+    // the server is still asked below so the text never stays stale.
+    const stored = readStored(date, lang);
+    const storedRaw = stored ? store.get(storeKey(date, lang), null) : null;
+    if (stored) {
+      showDay(stored, false);
+    } else {
+      state.status = 'loading';
+      state.fromStore = false;
+      setTimeout(() => {
+        if (token === loadToken && state.status === 'loading') { state.slow = true; render(); }
+      }, SLOW_AFTER_MS);
+    }
     render();
-    let data = null;
-    let fromStore = false;
+
     try {
       const raw = await fetchDay(date, lang);
-      data = normalize(raw);
-      if (data) writeStored(date, lang, raw); // never store an empty/invalid response
-      else state.status = 'empty';
+      if (token !== loadToken) return; // user navigated on
+      const data = normalize(raw);
+      if (!data) {
+        if (!stored) { state.status = 'empty'; render(); }
+        return;
+      }
+      writeStored(date, lang, raw); // never store an empty/invalid response
+      if (!stored || JSON.stringify(raw) !== storedRaw) { showDay(data, false); render(); }
+      prefetchNeighbours(date, lang);
     } catch (e) {
-      data = readStored(date, lang);
-      fromStore = !!data;
-      if (!data) state.status = 'error';
+      if (token !== loadToken) return;
+      if (stored) { state.fromStore = true; render(); return; } // offline / server down: keep the saved copy
+      if (e && e.status === 422) state.status = 'range';
+      else { state.status = 'error'; state.errorMessage = (e && e.serverMessage) || ''; }
+      render();
     }
-    if (token !== loadToken) return; // user navigated on
-    state.data = data;
-    state.fromStore = fromStore;
-    if (data) {
-      state.status = 'ok';
-      const li = data.sections.findIndex((s) => s.type === 'liturgy');
-      state.open = li >= 0 ? li : 0;
-      state.tabs = {};
-    }
-    render();
   }
 
+  // Quietly fetch the days either side so stepping through the calendar is instant.
+  // This also asks the server for them, so the slow "first time" fetch happens before anyone waits for it.
+  const prefetching = new Set();
+  async function prefetch(iso, lang) {
+    if (DEMO || !navigator.onLine || (navigator.connection && navigator.connection.saveData)) return;
+    const key = storeKey(iso, lang);
+    if (prefetching.has(key) || readStored(iso, lang)) return;
+    prefetching.add(key);
+    try {
+      const res = await fetch(`${API_BASE}/${iso}?lang=${lang}`, { headers: { Accept: 'application/json' }, priority: 'low' });
+      if (res.ok) {
+        const raw = await res.json();
+        if (normalize(raw)) writeStored(iso, lang, raw);
+      }
+    } catch (e) { /* best effort only */ } finally { prefetching.delete(key); }
+  }
+  function prefetchNeighbours(iso, lang) {
+    setTimeout(() => { prefetch(addDays(iso, 1), lang); prefetch(addDays(iso, -1), lang); }, 800);
+  }
   // ---------------------------------------------------------------- preferences
   function applyTheme() {
     const dark = state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -422,10 +479,14 @@
   function statusBlock() {
     const tr = t();
     if (state.status === 'loading') {
-      return `<div role="status" aria-label="${esc(tr.loading)}">${[0, 1, 2, 3].map(() => '<div class="skeleton-card"><span></span><span></span><span></span><span></span></div>').join('')}</div>`;
+      const hint = state.slow ? `<p class="slow-hint">${esc(tr.slowLoading)}</p>` : '';
+      return `<div role="status" aria-label="${esc(tr.loading)}">${hint}${[0, 1, 2, 3].map(() => '<div class="skeleton-card"><span></span><span></span><span></span><span></span></div>').join('')}</div>`;
     }
     const isErr = state.status === 'error';
-    return `<div class="empty-state"><span class="empty-icon">${icon('calendar')}</span><strong>${esc(isErr ? tr.errorTitle : tr.emptyTitle)}</strong><p>${esc(isErr ? tr.errorBody : tr.emptyBody)}</p>
+    const isRange = state.status === 'range';
+    const title = isRange ? tr.rangeTitle : isErr ? tr.errorTitle : tr.emptyTitle;
+    const body = isRange ? tr.rangeBody : isErr ? (state.errorMessage || tr.errorBody) : tr.emptyBody;
+    return `<div class="empty-state"><span class="empty-icon">${icon('calendar')}</span><strong>${esc(title)}</strong><p>${esc(body)}</p>
       <div class="component-row">${isErr ? button({ act: 'retry', variant: 'primary', label: tr.retry, ic: icon('refresh', 17) }) : ''}${button({ act: 'nav', variant: 'soft', label: tr.selectDate, data: 'data-screen="calendar"' })}</div></div>`;
   }
 

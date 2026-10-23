@@ -11,6 +11,7 @@ use App\Models\DailyReading;
 use App\Services\CopticCalendarService;
 use App\Services\ReadingService;
 use App\Services\ReadingStore;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -177,7 +178,7 @@ class WarmReadingsTest extends TestCase
 
     public function test_is_scheduled_weekly_on_tuesday_at_three_cairo_time(): void
     {
-        $events = collect(app(\Illuminate\Console\Scheduling\Schedule::class)->events())
+        $events = collect(app(Schedule::class)->events())
             ->filter(fn ($e) => str_contains($e->command, 'readings:warm'));
 
         $weekly = $events->first(fn ($e) => $e->expression === '0 3 * * 2');

@@ -8,7 +8,6 @@ use App\Enums\Language;
 use App\Enums\ReadingSource;
 use App\Exceptions\ReadingsApiException;
 use App\Exceptions\ReadingsUnavailableException;
-use App\Models\ReadingOverride;
 use Carbon\CarbonImmutable;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -17,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Lookup order: cache -> database -> PPT override -> Katameros API.
+ * Lookup order: cache -> database -> Katameros API.
  * Anything found further down is written back to the database and the cache.
  */
 class ReadingService
@@ -41,21 +40,6 @@ class ReadingService
     public function isStored(CarbonImmutable|string $date, Language $language): bool
     {
         return $this->store->has($this->day($date), $language);
-    }
-
-    /** Called after a PPT override is imported or changed: rewrite the affected days and drop their cache. */
-    public function refreshOverride(ReadingOverride $override): int
-    {
-        $dates = $override->date !== null
-            ? [CarbonImmutable::parse($override->date->toDateString(), config('readings.timezone'))]
-            : $this->store->datesForCopticKey($override->coptic_key, $override->language);
-
-        foreach ($dates as $date) {
-            $this->store->save($this->store->overrideToDto($override, $date));
-            $this->cache()->forget(ReadingCacheKey::for($override->language, $date));
-        }
-
-        return count($dates);
     }
 
     // ------------------------------------------------------------------ lookup steps
@@ -95,7 +79,7 @@ class ReadingService
                 config('readings.cache.lock_wait_seconds'),
                 fn () => $this->fromCache($date, $language)
                     ?? $this->fromDatabase($date, $language)
-                    ?? $this->fromOverrideOrApi($date, $language),
+                    ?? $this->fromApi($date, $language),
             );
         } catch (LockTimeoutException $e) {
             return $this->fromCache($date, $language)
@@ -104,13 +88,8 @@ class ReadingService
         }
     }
 
-    private function fromOverrideOrApi(CarbonImmutable $date, Language $language): DailyReadingDto
+    private function fromApi(CarbonImmutable $date, Language $language): DailyReadingDto
     {
-        $override = $this->store->findOverride($date, $language);
-        if ($override !== null && ! $override->isEmpty()) {
-            return $this->persist($override);
-        }
-
         try {
             return $this->persist($this->api->fetch($date, $language));
         } catch (ReadingsApiException $e) {

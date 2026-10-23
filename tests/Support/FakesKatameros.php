@@ -15,7 +15,6 @@ use App\Enums\SectionType;
 use App\Services\CopticCalendarService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Http;
-use ZipArchive;
 
 trait FakesKatameros
 {
@@ -100,29 +99,5 @@ trait FakesKatameros
             ])],
             ReadingSource::Api,
         );
-    }
-
-    /** Writes a minimal .pptx (one slide per entry, one paragraph per line) and returns its path. */
-    protected function makePptx(string $filename, array $slides): string
-    {
-        $dir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'readings-test-'.uniqid();
-        mkdir($dir);
-        $path = $dir.DIRECTORY_SEPARATOR.$filename;
-
-        $zip = new ZipArchive;
-        $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        foreach ($slides as $i => $lines) {
-            $paragraphs = implode('', array_map(
-                fn (string $line) => '<a:p><a:r><a:t>'.htmlspecialchars($line, ENT_XML1).'</a:t></a:r></a:p>',
-                $lines,
-            ));
-            $zip->addFromString(
-                'ppt/slides/slide'.($i + 1).'.xml',
-                '<?xml version="1.0" encoding="UTF-8"?><p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:sp><p:txBody>'.$paragraphs.'</p:txBody></p:sp></p:spTree></p:cSld></p:sld>',
-            );
-        }
-        $zip->close();
-
-        return $path;
     }
 }

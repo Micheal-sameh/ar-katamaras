@@ -2,12 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\DTOs\CopticDateDto;
-use App\Enums\CopticMonth;
 use App\Enums\Language;
 use App\Models\DailyReading;
-use App\Services\CopticCalendarService;
-use App\Services\PptImportService;
 use App\Services\ReadingCacheKey;
 use App\Services\ReadingService;
 use App\Services\ReadingStore;
@@ -25,6 +21,12 @@ class ReadingEndpointTest extends TestCase
     use RefreshDatabase;
 
     private const URL = '/api/readings/2026-10-23?lang=ar';
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->travelTo(CarbonImmutable::create(2026, 10, 23, 12, 0, 0, 'Africa/Cairo'));
+    }
 
     public function test_returns_the_day_in_the_documented_shape(): void
     {
@@ -166,71 +168,84 @@ class ReadingEndpointTest extends TestCase
         $lock->release();
     }
 
-    public function test_a_ppt_override_invalidates_the_cached_date(): void
+    public function test_dates_outside_the_public_window_are_rejected_without_calling_the_api(): void
     {
         $this->fakeKatameros();
-        $first = $this->getJson(self::URL)->assertOk();
-        $this->assertStringContainsString('لأنه متى قال واحد', json_encode($first->json(), JSON_UNESCAPED_UNICODE));
-        Http::assertSentCount(1);
 
-        // The church's own text for the same day arrives as a PPT.
-        $pptx = $this->makePptx('2026-10-23_ar.pptx', [
-            ['البولس', '1 نص الكنيسة الأول', '2 نص الكنيسة الثاني'],
+        $this->getJson('/api/readings/2024-01-01?lang=ar')->assertStatus(422)->assertJsonValidationErrors('date');
+        $this->getJson('/api/readings/2030-01-01?lang=ar')->assertStatus(422)->assertJsonValidationErrors('date');
+        $this->getJson('/api/readings/2026-10-23?lang=ar')->assertOk(); // today is inside the window
+        $this->getJson('/api/readings/2027-10-23?lang=ar')->assertOk(); // edge of the default 366 day window
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_the_window_is_configurable(): void
+    {
+        $this->fakeKatameros();
+        config(['readings.http.past_days' => 10, 'readings.http.future_days' => 10]);
+
+        $this->getJson('/api/readings/2026-10-12?lang=ar')->assertStatus(422);
+        $this->getJson('/api/readings/2026-10-13?lang=ar')->assertOk();
+        $this->getJson('/api/readings/2026-11-02?lang=ar')->assertOk();
+        $this->getJson('/api/readings/2026-11-03?lang=ar')->assertStatus(422);
+    }
+
+    public function test_each_client_ip_is_rate_limited(): void
+    {
+        $this->fakeKatameros();
+        config(['readings.http.throttle_per_minute' => 3]);
+
+        for ($i = 0; $i < 3; $i++) {
+            $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])->getJson(self::URL)->assertOk();
+        }
+
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.5'])->getJson(self::URL)->assertStatus(429);
+        $this->withServerVariables(['REMOTE_ADDR' => '203.0.113.6'])->getJson(self::URL)->assertOk(); // another visitor is unaffected
+    }
+
+    public function test_security_headers_are_present(): void
+    {
+        $this->fakeKatameros();
+
+        $response = $this->getJson(self::URL)->assertOk();
+
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        $response->assertHeader('X-Frame-Options', 'SAMEORIGIN');
+        $response->assertHeaderMissing('X-Powered-By');
+    }
+
+    public function test_hsts_is_sent_over_https_only(): void
+    {
+        $this->fakeKatameros();
+
+        $this->getJson(self::URL)->assertHeaderMissing('Strict-Transport-Security');
+        $this->withServerVariables(['HTTPS' => 'on'])->getJson('https://localhost'.self::URL)->assertHeader('Strict-Transport-Security');
+    }
+
+    public function test_cors_allows_get_from_other_origins_and_exposes_the_etag(): void
+    {
+        $this->fakeKatameros();
+
+        $preflight = $this->call('OPTIONS', '/api/readings/2026-10-23', [], [], [], [
+            'HTTP_ORIGIN' => 'http://tauri.localhost',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'GET',
         ]);
-        app(PptImportService::class)->import($pptx);
+        $this->assertSame(204, $preflight->getStatusCode());
+        $this->assertSame('*', $preflight->headers->get('Access-Control-Allow-Origin'));
 
-        $after = $this->getJson(self::URL)->assertOk();
-
-        $after->assertHeader('X-Readings-Source', 'ppt');
-        $after->assertJsonPath('data.sections.0.subSections.0.type', 'pauline');
-        $after->assertJsonPath('data.sections.0.subSections.0.readings.0.passages.0.verses.0.text', 'نص الكنيسة الأول');
-        $this->assertStringNotContainsString('لأنه متى قال واحد', json_encode($after->json(), JSON_UNESCAPED_UNICODE));
-        Http::assertSentCount(1); // the override replaced the API copy without another API call
+        $actual = $this->getJson(self::URL, ['Origin' => 'http://tauri.localhost'])->assertOk();
+        $this->assertStringContainsString('ETag', $actual->headers->get('Access-Control-Expose-Headers'));
     }
 
-    public function test_re_importing_an_unchanged_ppt_leaves_the_cache_alone(): void
+    public function test_cors_rejects_post_from_other_origins(): void
     {
-        $this->fakeKatameros();
-        $pptx = $this->makePptx('2026-10-23_ar.pptx', [['البولس', '1 نص']]);
-        $importer = app(PptImportService::class);
-        $importer->import($pptx);
-        $this->getJson(self::URL)->assertOk();
-        $key = ReadingCacheKey::for(Language::Arabic, CarbonImmutable::parse('2026-10-23'));
-        $this->assertTrue(Cache::store('array')->has($key));
+        $preflight = $this->call('OPTIONS', '/api/readings/2026-10-23', [], [], [], [
+            'HTTP_ORIGIN' => 'https://evil.example',
+            'HTTP_ACCESS_CONTROL_REQUEST_METHOD' => 'POST',
+        ]);
 
-        $importer->import($pptx); // identical file
-
-        $this->assertTrue(Cache::store('array')->has($key));
-    }
-
-    public function test_a_ppt_is_used_instead_of_the_api_for_a_day_that_has_no_stored_copy(): void
-    {
-        $this->fakeKatameros();
-        app(PptImportService::class)->import($this->makePptx('2026-10-24_ar.pptx', [['السنكسار', 'فقرة أولى', 'فقرة ثانية']]));
-
-        $this->getJson('/api/readings/2026-10-24?lang=ar')
-            ->assertOk()
-            ->assertHeader('X-Readings-Source', 'ppt')
-            ->assertJsonPath('data.sections.0.type', 'synaxarium')
-            ->assertJsonPath('data.sections.0.subSections.0.readings.0.paragraphs.1', 'فقرة ثانية');
-        Http::assertNothingSent();
-    }
-
-    public function test_a_coptic_day_override_applies_to_every_year(): void
-    {
-        $this->fakeKatameros();
-        app(PptImportService::class)->import($this->makePptx('coptic-02-13_ar.pptx', [['البولس', '1 نص يتكرر كل سنة']]));
-
-        // 2026-10-23 is 13 Paopi 1743; a year later the Coptic day is the same even though the Gregorian date moves.
-        $this->getJson(self::URL)->assertOk()->assertHeader('X-Readings-Source', 'ppt');
-        $nextYear = app(CopticCalendarService::class)->toGregorian(new CopticDateDto(13, CopticMonth::Paopi, 1744));
-        $this->getJson('/api/readings/'.$nextYear->toDateString().'?lang=ar')->assertOk()->assertHeader('X-Readings-Source', 'ppt');
-        Http::assertNothingSent();
-    }
-
-    public function test_ppt_import_rejects_files_it_cannot_place(): void
-    {
-        $this->expectException(\InvalidArgumentException::class);
-        app(PptImportService::class)->import($this->makePptx('mystery.pptx', [['البولس', '1 نص']]));
+        $this->assertStringNotContainsString('POST', (string) $preflight->headers->get('Access-Control-Allow-Methods'));
     }
 }

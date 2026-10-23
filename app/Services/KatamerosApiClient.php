@@ -52,6 +52,7 @@ class KatamerosApiClient implements ReadingsApiClient
         try {
             $response = Http::baseUrl(rtrim(config('readings.api.base_url'), '/'))
                 ->acceptJson()
+                ->connectTimeout(config('readings.api.connect_timeout'))
                 ->timeout(config('readings.api.timeout'))
                 ->retry(max(1, (int) config('readings.api.retries')), 500, throw: false)
                 ->get('/readings/gregorian/'.$date->format('d-m-Y'), $query);

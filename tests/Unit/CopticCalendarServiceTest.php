@@ -58,7 +58,6 @@ class CopticCalendarServiceTest extends TestCase
     {
         $coptic = $this->calendar->fromGregorian(CarbonImmutable::parse('2026-10-23'));
 
-        $this->assertSame('02-13', $coptic->dayKey());
         $this->assertSame('بابه', CopticMonth::Paopi->arabic());
         $this->assertSame('13 Paopi 1743', $coptic->format(Language::English));
         $this->assertSame('13 بابه 1743', $coptic->format(Language::Arabic));

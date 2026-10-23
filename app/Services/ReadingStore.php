@@ -4,17 +4,13 @@ namespace App\Services;
 
 use App\DTOs\DailyReadingDto;
 use App\Enums\Language;
-use App\Enums\ReadingSource;
 use App\Models\DailyReading;
-use App\Models\ReadingOverride;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
-/** Database persistence for stored days and PPT overrides. Rows never expire. */
+/** Database persistence for stored days. Rows never expire. */
 class ReadingStore
 {
-    public function __construct(private readonly CopticCalendarService $calendar) {}
-
     public function find(CarbonImmutable $date, Language $language): ?DailyReadingDto
     {
         $row = DailyReading::query()
@@ -51,47 +47,6 @@ class ReadingStore
         );
 
         return true;
-    }
-
-    public function findOverride(CarbonImmutable $date, Language $language): ?DailyReadingDto
-    {
-        $override = ReadingOverride::query()
-            ->where('language', $language->value)
-            ->where(function ($q) use ($date) {
-                $q->whereDate('date', $date->toDateString())
-                    ->orWhere('coptic_key', $this->calendar->fromGregorian($date)->dayKey());
-            })
-            ->orderByRaw('date IS NULL') // an exact date beats a recurring Coptic day
-            ->first();
-
-        return $override === null ? null : $this->overrideToDto($override, $date);
-    }
-
-    public function overrideToDto(ReadingOverride $override, CarbonImmutable $date): DailyReadingDto
-    {
-        $payload = $override->payload;
-        $payload['copticDate'] ??= $this->calendar->fromGregorian($date)->toArray();
-
-        return DailyReadingDto::fromPayload($date, $override->language, ReadingSource::Ppt, $payload);
-    }
-
-    /**
-     * Stored days whose Coptic day matches a recurring "MM-DD" key.
-     *
-     * @return list<CarbonImmutable>
-     */
-    public function datesForCopticKey(string $copticKey, Language $language): array
-    {
-        [$month, $day] = array_map('intval', explode('-', $copticKey) + [0, 0]);
-
-        return DailyReading::query()
-            ->where('language', $language->value)
-            ->where(function ($q) use ($day, $month) {
-                $q->where('coptic_date', 'like', "{$day}/{$month}/%");
-            })
-            ->get(['date'])
-            ->map(fn (DailyReading $r) => CarbonImmutable::parse($r->date->toDateString(), config('readings.timezone')))
-            ->all();
     }
 
     /** @return array{first: ?string, last: ?string, count: int} */

@@ -1,5 +1,5 @@
 /* Service worker: app shell cache-first, readings API stale-while-revalidate. */
-const VERSION = 'v13';
+const VERSION = 'v14';
 const SHELL = `shell-${VERSION}`;
 const API = `api-${VERSION}`;
 const FONTS = `fonts-${VERSION}`;

@@ -2,7 +2,7 @@
 
 namespace App\DTOs;
 
-/** number 0 means "unnumbered" (e.g. text imported from slides). */
+/** number 0 means "unnumbered". */
 final readonly class VerseDto
 {
     public function __construct(

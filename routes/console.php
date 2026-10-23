@@ -27,3 +27,11 @@ Schedule::command('readings:warm --days='.config('readings.warm.days'))
         (int) config('readings.warm.days'),
         config('readings.languages'),
     ));
+
+// On the 25th: store the rest of this month and the whole next month, so no visitor waits for a live
+// fetch. If days cannot be stored, one email goes to READINGS_ALERT_EMAIL (see WarmMonth).
+Schedule::command('readings:warm-month')
+    ->monthlyOn((int) config('readings.warm.monthly.day'), config('readings.warm.monthly.time'))
+    ->timezone('Africa/Cairo')
+    ->onOneServer()
+    ->withoutOverlapping();

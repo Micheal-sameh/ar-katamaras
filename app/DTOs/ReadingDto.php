@@ -6,7 +6,7 @@ final readonly class ReadingDto
 {
     /**
      * @param  list<PassageDto>  $passages
-     * @param  list<string>  $paragraphs  plain-text paragraphs (Synaxarium text, slide text); never HTML
+     * @param  list<string>  $paragraphs  plain-text paragraphs (the Synaxarium text); never HTML
      */
     public function __construct(
         public string $title,
