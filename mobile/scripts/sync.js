@@ -38,6 +38,7 @@ fs.writeFileSync(path.join(to, 'js/config.js'),
     },
     path: { join: function () { return Array.prototype.join.call(arguments, '/'); } },
   };
+  var process = { env: {} };
   var module = { exports: {} };
   var require = function (name) { return modules[name] || {}; /* ../app/js/coptic.js is already loaded as a script */ };
   ${katameros.replace(/\n/g, '\n  ')}
