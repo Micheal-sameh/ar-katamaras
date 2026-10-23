@@ -27,6 +27,11 @@
       "app/**/*",
       "package.json"
     ],
+    "compression": "maximum",
+    "electronLanguages": [
+      "ar",
+      "en-US"
+    ],
     "directories": {
       "output": "dist"
     },
