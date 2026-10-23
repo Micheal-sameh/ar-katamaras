@@ -11,6 +11,13 @@
   const STORE_MAX_DAYS = 60;
   const FONT_MIN = 17;
   const FONT_MAX = 30;
+  const FONT_FAMILIES = {
+    amiri: ['Amiri', "Amiri, Georgia, serif"],
+    naskh: ['Noto Naskh Arabic', "'Noto Naskh Arabic', Georgia, serif"],
+    scheherazade: ['Scheherazade New', "'Scheherazade New', Georgia, serif"],
+    cairo: ['Cairo', "Cairo, sans-serif"],
+    tajawal: ['Tajawal', "Tajawal, sans-serif"],
+  };
   const SPEED_MIN = 2; // auto-scroll, pixels per second
   const SPEED_MAX = 30;
 
@@ -21,7 +28,7 @@
       previous: 'اليوم السابق', next: 'اليوم التالي', nextReading: 'القراءة التالية', prevReading: 'القراءة السابقة', selectDate: 'اختر التاريخ', switchLang: 'English',
       focus: 'وضع القراءة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
       darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
-      appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
+      appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', fontType: 'نوع الخط', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
       light: 'فاتح', dark: 'داكن', auto: 'تلقائي', preview: 'معاينة النص', previewText: 'كلامك سراج لرجلي ونور لسبيلي.',
       offlineBanner: 'أنت غير متصل — تعرض القراءات المحفوظة', savedBanner: 'تعذر الاتصال بالخادم — تعرض نسخة محفوظة على هذا الجهاز',
       errorTitle: 'تعذر تحميل القراءات', errorBody: 'لا توجد نسخة محفوظة لهذا اليوم، وتعذر الاتصال بالخادم. حاول مرة أخرى أو اختر يومًا آخر.',
@@ -35,7 +42,7 @@
       previous: 'Previous day', next: 'Next day', nextReading: 'Next reading', prevReading: 'Previous reading', selectDate: 'Choose a date', switchLang: 'العربية',
       focus: 'Reading focus', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
       darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
-      appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
+      appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', fontType: 'Font type', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
       light: 'Light', dark: 'Dark', auto: 'Auto', preview: 'Text preview', previewText: 'Your word is a lamp to my feet and a light to my path.',
       offlineBanner: 'You are offline — showing saved readings', savedBanner: 'Server unreachable — showing a copy saved on this device',
       errorTitle: 'Could not load readings', errorBody: 'There is no saved copy for this day and the server cannot be reached. Try again or pick another day.',
@@ -83,6 +90,7 @@
     lang: store.get('lang', 'ar') === 'en' ? 'en' : 'ar',
     theme: ['light', 'dark', 'auto'].includes(store.get('theme')) ? store.get('theme') : 'auto',
     fontSize: clamp(parseInt(store.get('fontSize', '21'), 10) || 21, FONT_MIN, FONT_MAX),
+    fontFamily: store.get('fontFamily') in FONT_FAMILIES ? store.get('fontFamily') : 'amiri',
     scrollSpeed: clamp(parseInt(store.get('scrollSpeed', '8'), 10) || 8, SPEED_MIN, SPEED_MAX),
     screen: 'today',
     date: todayISO(),
@@ -143,7 +151,17 @@
       })).filter((sub) => sub.readings.length),
     })).filter((s) => s.subSections.length);
     if (!sections.length) return null;
-    return { date: str(p.date), copticDate: p.copticDate || null, sections };
+    return { date: str(p.date), copticDate: p.copticDate || null, sections: placeSynaxarium(sections) };
+  }
+
+  /** The server sends the Synaxarium as its own section; the Liturgy reads in order: Paul, Catholicon, Praxis, Synaxarium, Psalm & Gospel. */
+  function placeSynaxarium(sections) {
+    const synax = sections.find((s) => s.type === 'synaxarium');
+    const liturgy = sections.find((s) => s.type === 'liturgy');
+    if (!synax || !liturgy) return sections;
+    const psalmAt = liturgy.subSections.findIndex((s) => ['psalm_gospel', 'psalm', 'gospel'].includes(s.type));
+    liturgy.subSections.splice(psalmAt < 0 ? liturgy.subSections.length : psalmAt, 0, ...synax.subSections.filter((s) => !liturgy.subSections.includes(s)));
+    return sections.filter((s) => s !== synax);
   }
 
   /** Never inject API HTML: parse inertly and keep text only. */
@@ -222,6 +240,12 @@
   }
   const isDark = () => state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   function setTheme(v) { state.theme = v; store.set('theme', v); }
+  function setFamily(k) {
+    if (!(k in FONT_FAMILIES)) return;
+    state.fontFamily = k;
+    store.set('fontFamily', k);
+    document.documentElement.style.setProperty('--font-scripture', FONT_FAMILIES[k][1]);
+  }
   function setSpeed(n) { state.scrollSpeed = clamp(n, SPEED_MIN, SPEED_MAX); store.set('scrollSpeed', String(state.scrollSpeed)); }
   function setFont(n) { state.fontSize = clamp(n, FONT_MIN, FONT_MAX); store.set('fontSize', String(state.fontSize)); }
   function setLang(l) {
@@ -248,7 +272,6 @@
       </button>
       <nav class="desktop-nav" aria-label="${esc(tr.mainNav)}">${nav}</nav>
       <div class="header-actions">
-        ${button({ act: 'toggleLang', label: tr.switchLang, variant: 'soft' })}
         ${button({ act: 'toggleTheme', variant: 'icon', title: isDark() ? tr.lightMode : tr.darkMode, ic: icon(isDark() ? 'sun' : 'moon') })}
         ${button({ act: 'nav', variant: 'icon', title: tr.settings, ic: icon('settings'), data: 'data-screen="settings"' })}
       </div>
@@ -434,7 +457,8 @@
   function synaxariumScreen() {
     const tr = t();
     const c = copticOf(state.date);
-    const sec = state.data && state.data.sections.find((s) => s.type === 'synaxarium');
+    const synax = state.data && state.data.sections.flatMap((s) => s.subSections).filter((s) => s.type === 'synaxarium');
+    const sec = synax && synax.length ? { title: synax[0].title, subSections: synax } : null;
     let inner;
     if (state.status === 'loading') inner = statusBlock();
     else if (!sec) inner = state.status === 'ok' ? `<div class="empty-state"><strong>${esc(tr.noSynax)}</strong></div>` : statusBlock();
@@ -454,6 +478,8 @@
       <div class="settings-card">
         <div class="setting-row"><div><strong>${esc(tr.langLabel)}</strong><small>${isAr() ? 'العربية' : 'English'}</small></div>
           ${seg([['setLang', 'العربية', isAr(), '', 'data-v="ar"'], ['setLang', 'English', !isAr(), '', 'data-v="en"']])}</div>
+        <div class="setting-row"><div><strong>${esc(tr.fontType)}</strong></div>
+          <select class="font-select" aria-label="${esc(tr.fontType)}" data-input="family">${Object.entries(FONT_FAMILIES).map(([k, [name]]) => `<option value="${k}"${k === state.fontFamily ? ' selected' : ''}>${esc(name)}</option>`).join('')}</select></div>
         <div class="setting-row stacked"><div><strong>${esc(tr.fontSize)}</strong><small>${num(state.fontSize)}px</small></div>
           <input aria-label="${esc(tr.fontSize)}" type="range" min="${FONT_MIN}" max="${FONT_MAX}" value="${state.fontSize}" data-input="font">
           <div class="font-preview" style="--reading-size:${state.fontSize}px"><span>${esc(tr.preview)}</span><p>${esc(tr.previewText)}</p></div></div>
@@ -500,6 +526,7 @@
   const root = document.getElementById('app');
   function render() {
     const dark = applyTheme();
+    document.documentElement.style.setProperty('--font-scripture', FONT_FAMILIES[state.fontFamily][1]);
     root.className = `app${dark ? ' theme-dark' : ''}`;
     root.dir = isAr() ? 'rtl' : 'ltr';
     document.documentElement.lang = state.lang;
@@ -573,6 +600,7 @@
     if (el && actions[el.dataset.act]) actions[el.dataset.act](el);
   });
   document.addEventListener('input', (e) => {
+    if (e.target.dataset && e.target.dataset.input === 'family') setFamily(e.target.value);
     if (e.target.dataset && e.target.dataset.input === 'speed') {
       setSpeed(Number(e.target.value));
       const small = e.target.closest('.setting-row').querySelector('small');

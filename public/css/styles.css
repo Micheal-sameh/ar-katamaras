@@ -150,6 +150,7 @@ html.is-dark { background: #16120f; }
 .reading-tabs button:hover { color: var(--ink); background: var(--paper-deep); }
 .reading-tabs button.active { color: var(--accent); background: var(--accent-soft); }
 .reading-intro, .reading-ending { max-width: 590px; margin: var(--space-6) 0 var(--space-4); color: var(--ink-soft); font-family: var(--font-scripture); font-size: calc(var(--reading-size, 21px) - 4px); line-height: 1.9; }
+.font-select { min-width: 160px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
 .speed-value { min-width: 22px; text-align: center; color: var(--ink-soft); font-family: var(--font-ui); font-size: 13px; font-weight: 700; }
 .next-reading { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-6); }
 .reading-ending { margin: var(--space-6) 0 0; padding-top: var(--space-5); border-top: 1px solid var(--border); }
