@@ -156,3 +156,16 @@ The schedule (Cairo time): Tuesday 03:00 warm-up; daily 04:00 catch-up (only whi
 
 A ready-made desktop wrapper is in `desktop/` (see `desktop/README.md`): `npm install`, `npm start`, `npm run dist:win`.
 It asks for the server address on first start. This is simpler than the Tauri route above because it needs no Rust.
+
+## Whole year on the server, two weeks on each device
+
+- **Server:** every Sunday 02:00 (Cairo) `readings:warm --days=365` (`READINGS_YEAR_DAYS`) stores a whole year ahead for every language.
+  Stored days are skipped, so after the first big run it only adds the new week. Run it once by hand to fill the year
+  straight away: `php artisan readings:warm --days=365` (about 6 minutes per language, one polite request per second).
+- **One request for two weeks:** `GET /api/readings/range?from=YYYY-MM-DD&days=14&lang=ar` returns up to `READINGS_RANGE_MAX_DAYS` (31)
+  days that are **already stored** (it never makes the server fetch from Katameros) and lists the days it does not have in `missing`.
+- **Device (web, installed app, Android, desktop with a server):** about 3 seconds after start the app asks for the next 14 days with that one
+  request, at most every 14 days (or earlier if fewer than 7 days are saved ahead). It keeps only a small rolling window
+  (2 days back, 16 ahead), so storage stays under about 1 MB per language (a day is roughly 40 KB) and never grows.
+  Older and far-future days are deleted automatically.
+- **Desktop app without a server:** it reads Katameros directly, keeps the next 14 days on disk, and deletes days outside the same window at each start.

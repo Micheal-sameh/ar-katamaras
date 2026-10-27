@@ -63,6 +63,9 @@ return [
     */
     'warm' => [
         'days' => (int) env('READINGS_WARM_DAYS', 7),
+
+        // readings:warm-year: keeps this many days ahead stored on the server (the whole year), topped up weekly.
+        'year_days' => (int) env('READINGS_YEAR_DAYS', 365),
         'sleep_seconds' => (int) env('READINGS_WARM_SLEEP', 1),
         'alert_below_days' => (int) env('READINGS_ALERT_BELOW_DAYS', 3),
         'retry_delays' => [60, 300, 900], // seconds: 1, 5, 15 minutes
@@ -112,6 +115,11 @@ return [
     | HTTP caching for GET /api/readings/{date}
     |--------------------------------------------------------------------------
     */
+    // GET /api/readings/range: how many stored days one request may return (the apps ask for 14).
+    'range' => [
+        'max_days' => (int) env('READINGS_RANGE_MAX_DAYS', 31),
+    ],
+
     'http' => [
         'max_age' => (int) env('READINGS_HTTP_MAX_AGE', 300),
 

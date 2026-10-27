@@ -8,7 +8,13 @@
   const API_BASE = (window.APP_CONFIG && window.APP_CONFIG.API_BASE) || '/api/readings'; // set in js/config.js
   const DEMO = !!(window.APP_CONFIG && window.APP_CONFIG.ALLOW_DEMO) && new URLSearchParams(location.search).has('demo');
   const STORE_PREFIX = 'reading:';
-  const STORE_MAX_DAYS = 60;
+  // Offline copy kept on the device: a small rolling window, so it never grows (a day is about 40 KB, so this
+  // is well under 1 MB per language). Every SYNC_EVERY_DAYS the app asks the server for the next SYNC_DAYS days.
+  const KEEP_BEHIND_DAYS = 2;
+  const KEEP_AHEAD_DAYS = 16;
+  const SYNC_DAYS = 14;
+  const SYNC_EVERY_DAYS = 14;
+  const SYNC_MIN_AHEAD_DAYS = 7; // also top up early when fewer than this many days are left ahead
   const FONT_MIN = 17;
   const FONT_MAX = 30;
   const FONT_FAMILIES = {
@@ -202,14 +208,46 @@
     store.set(storeKey(iso, lang), JSON.stringify(raw));
     pruneStored();
   }
+  /** Drops saved days outside the window (a little behind today, up to KEEP_AHEAD_DAYS ahead). */
   function pruneStored() {
     try {
-      const keys = Object.keys(localStorage).filter((k) => k.startsWith(STORE_PREFIX)).sort((a, b) => a.split(':')[2].localeCompare(b.split(':')[2]));
-      // keep newest STORE_MAX_DAYS days per language
-      const perLang = {};
-      keys.forEach((k) => { (perLang[k.split(':')[1]] = perLang[k.split(':')[1]] || []).push(k); });
-      Object.values(perLang).forEach((list) => list.slice(0, Math.max(0, list.length - STORE_MAX_DAYS)).forEach((k) => store.remove(k)));
+      const oldest = addDays(todayISO(), -KEEP_BEHIND_DAYS);
+      const newest = addDays(todayISO(), KEEP_AHEAD_DAYS);
+      Object.keys(localStorage).filter((k) => k.startsWith(STORE_PREFIX)).forEach((k) => {
+        const iso = k.split(':')[2];
+        if (iso < oldest || iso > newest) store.remove(k);
+      });
     } catch (e) { /* ignore */ }
+  }
+
+  /** How many of the next days are already saved for this language (stops at the first gap). */
+  function savedAhead(lang) {
+    let n = 0;
+    while (n < SYNC_DAYS && readStored(addDays(todayISO(), n), lang)) n++;
+    return n;
+  }
+
+  let syncing = false;
+  /** Tops up the offline window with ONE request for the next two weeks (stored days only: it never makes the server fetch). */
+  async function syncAhead(force = false) {
+    if (DEMO || syncing || !state.online || Date.now() < pausedUntil) return;
+    const lang = state.lang;
+    const key = `syncedAt:${lang}`;
+    const last = Number(store.get(key, '0')) || 0;
+    const due = Date.now() - last >= SYNC_EVERY_DAYS * 86400000;
+    if (!force && !due && savedAhead(lang) >= SYNC_MIN_AHEAD_DAYS) return;
+    syncing = true;
+    try {
+      const from = todayISO();
+      const res = await fetch(`${API_BASE}/range?from=${from}&days=${SYNC_DAYS}&lang=${lang}${bibleFor(lang) ? `&bible=${bibleFor(lang)}` : ''}`, { headers: { Accept: 'application/json' }, priority: 'low' });
+      if (res.status === 429) { pauseRequests(clamp(parseInt(res.headers.get('Retry-After'), 10) || 30, 5, 120)); return; }
+      if (!res.ok) return; // an older server without /range: the app still works day by day
+      const body = await res.json();
+      const days = body && body.data && Array.isArray(body.data.days) ? body.data.days : [];
+      days.forEach((day) => { if (day && day.date) store.set(storeKey(day.date, lang), JSON.stringify(day)); });
+      if (days.length) store.set(key, String(Date.now()));
+      pruneStored();
+    } catch (e) { /* offline or server down: try again next time the app starts */ } finally { syncing = false; }
   }
 
   async function fetchDay(iso, lang) {
@@ -340,6 +378,7 @@
     state.lang = l;
     store.set('lang', l);
     load();
+    setTimeout(syncAhead, 3000);
   }
 
   // ---------------------------------------------------------------- views
@@ -753,7 +792,7 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && state.focus) actions.back();
   });
-  window.addEventListener('online', () => { state.online = true; render(); load(); });
+  window.addEventListener('online', () => { state.online = true; render(); load(); setTimeout(syncAhead, 3000); });
   window.addEventListener('offline', () => { state.online = false; render(); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (state.theme === 'auto') render(); });
   // device passes midnight while the app stays open: follow the new day if the user was on "today"
@@ -769,4 +808,5 @@
     navigator.serviceWorker.register('sw.js').catch(() => { /* app works without it */ });
   }
   load();
+  setTimeout(syncAhead, 3000); // after the first day is on screen
 })();

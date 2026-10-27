@@ -57,6 +57,7 @@ async function answer(request) {
 /** Keeps the next days in the app's own cache (userData/days), politely, so it also works offline. */
 async function warm(days = 14) {
   if (readSettings().server) return; // with our own server, that server does the caching
+  direct.prune();
   const start = new Date();
   for (let i = 0; i < days; i++) {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);

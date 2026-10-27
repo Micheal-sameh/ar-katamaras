@@ -19,6 +19,14 @@ Schedule::command('readings:warm --days='.config('readings.warm.days'))
     ->onOneServer()
     ->withoutOverlapping();
 
+// Every Sunday 02:00 (Cairo): top the server's store up to a whole year ahead (stored days are skipped, so after
+// the first big run it only adds the new week). The apps then pull two weeks at a time from /api/readings/range.
+Schedule::command('readings:warm --days='.config('readings.warm.year_days'))
+    ->weeklyOn(0, '02:00')
+    ->timezone('Africa/Cairo')
+    ->onOneServer()
+    ->withoutOverlapping(1440);
+
 // If the weekly run could not finish (internet down), try again every day until it has.
 // Already stored days are skipped, so a complete window costs nothing.
 Schedule::command('readings:warm --days='.config('readings.warm.days'))
