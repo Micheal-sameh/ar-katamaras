@@ -61,4 +61,11 @@ fs.writeFileSync(path.join(to, 'js/config.js'),
   window.APP_CONFIG = { API_BASE: '/api/readings', ALLOW_DEMO: false };
 })();
 `);
-console.log('Synced web app into mobile/www');
+// On-the-fly updates (see scripts/updater.js and README).
+const pkg = require('../package.json');
+const baseUrl = String(require('../update.config.json').baseUrl || '').replace(/\/+$/, '');
+fs.writeFileSync(path.join(to, 'js/updater.js'),
+  fs.readFileSync(path.join(__dirname, 'updater.js'), 'utf8').replace('__BASE_URL__', baseUrl).replace('__BUILT_IN__', pkg.version));
+const indexFile = path.join(to, 'index.html');
+fs.writeFileSync(indexFile, fs.readFileSync(indexFile, 'utf8').replace('<script src="js/app.js"></script>', '<script src="js/updater.js"></script>\n  <script src="js/app.js"></script>'));
+console.log('Synced web app into mobile/www (web version ' + pkg.version + ')');

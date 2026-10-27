@@ -230,10 +230,10 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .font-preview p { margin: var(--space-2) 0 0; font-family: var(--font-scripture); font-size: var(--reading-size); line-height: 1.8; }
 
 /* ---------- focus mode ---------- */
-.focus-mode { min-height: 100vh; padding: 0 20px 120px; }
-.focus-top { max-width: 920px; height: 72px; margin: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; color: var(--ink-soft); font-size: 13px; }
+.focus-mode { min-height: 100vh; padding: 0 clamp(20px, 4vw, 72px) 120px; }
+.focus-top { max-width: none; height: 72px; margin: auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; color: var(--ink-soft); font-size: 13px; }
 .focus-top > :last-child { min-width: 60px; }
-.focus-reading { max-width: 760px; margin: clamp(40px, 8vh, 100px) auto; font-family: var(--font-scripture); font-size: var(--reading-size); line-height: 2.2; }
+.focus-reading { max-width: none; margin: clamp(40px, 8vh, 100px) auto; font-family: var(--font-scripture); font-size: var(--reading-size); line-height: 2.2; }
 .focus-reading .reading-intro, .focus-reading .reading-ending { max-width: none; text-align: center; font-size: 1em; }
 .focus-reading .verse-row + .verse-row { margin-top: var(--space-5); }
 .focus-reading .reading-item { text-align: start; }

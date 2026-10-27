@@ -4,6 +4,7 @@
   "webDir": "www",
   "backgroundColor": "#faf6ee",
   "plugins": {
-    "CapacitorHttp": { "enabled": true }
+    "CapacitorHttp": { "enabled": true },
+    "CapacitorUpdater": { "autoUpdate": false }
   }
 }
