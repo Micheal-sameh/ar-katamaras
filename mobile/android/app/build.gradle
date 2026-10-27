@@ -4,7 +4,7 @@ android {
     namespace "com.avarewase.readings"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.avarewase.readings"
+        applicationId "com.avarewase.ar_katamaras"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,7 +1,7 @@
 {
-  "name": "avarewase-readings-mobile",
+  "name": "ar-katamaras",
   "version": "1.0.0",
-  "description": "Android app for the Avarewase daily readings",
+  "description": "Ar-katamaras: Android app for the daily readings",
   "private": true,
   "scripts": {
     "sync": "node scripts/sync.js && cap sync android",

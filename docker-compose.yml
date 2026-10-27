@@ -6,7 +6,7 @@ x-app: &app
     context: .
     target: app
   image: avarewase/readings-app:latest
-  env_file: docker/app.env # copy docker/app.env.example first
+  env_file: .env
   environment: &app-env
     APP_ENV: production
     APP_DEBUG: "false"

@@ -1,6 +1,6 @@
 {
-  "appId": "com.avarewase.readings",
-  "appName": "Avarewase Readings",
+  "appId": "com.avarewase.ar_katamaras",
+  "appName": "Ar-katamaras",
   "webDir": "www",
   "backgroundColor": "#faf6ee",
   "plugins": {
