@@ -89,7 +89,7 @@ The app is a public, read-only site. There are no logins, cookies or write endpo
 
 **What the code already does**
 - Only days within 366 days of today can be requested (`READINGS_PAST_DAYS` / `READINGS_FUTURE_DAYS`). Without this, anyone could script thousands of dates and make your server hammer the Katameros API.
-- 60 requests per minute per client IP (`READINGS_THROTTLE_PER_MINUTE`), answered with HTTP 429 beyond that.
+- 30 requests per minute per client IP (`READINGS_THROTTLE_PER_MINUTE`), answered with HTTP 429 beyond that.
 - Security headers on everything Laravel serves, HSTS over HTTPS, and `Cache-Control` / `ETag` so repeat visits cost almost nothing.
 - CORS: `GET` only on `api/*`. Restrict origins with `CORS_ALLOWED_ORIGINS`.
 - In production, generated URLs are forced to `https`.
@@ -202,7 +202,7 @@ otherwise the server answers 401 and fetches nothing.
 - **Apps:** the website, the desktop app (server mode) and the Android app show a "Church code" screen when the server answers 401.
   The typed code is checked with `GET /api/readings/access` and only kept when right. Settings has "Change church code";
   if a code is withdrawn, that device asks again.
-- **Guessing:** wrong codes are limited per IP (`READINGS_ACCESS_MAX_FAILURES`, default 10 a minute, then 429). A valid code is never blocked,
+- **Guessing:** wrong codes are limited per IP (`READINGS_ACCESS_MAX_FAILURES`, default 5 a minute, then 429). A valid code is never blocked,
   so someone guessing on the church's shared Wi-Fi cannot lock the members out.
 - **Caching:** while codes are set the answers are `Cache-Control: private` with `Vary: X-Church-Code`, so Cloudflare or a proxy never hands a stored copy to someone without a code.
   `/api/health` stays open for the uptime monitor.

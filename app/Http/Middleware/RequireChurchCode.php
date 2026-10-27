@@ -23,6 +23,10 @@ class RequireChurchCode
             return $next($request);
         }
 
+        if ($this->access->acceptsApp((string) $request->header('X-App-Key', ''))) {
+            return $next($request); // the Android / Windows apps: only the website asks for a code
+        }
+
         $given = (string) $request->header('X-Church-Code', '');
         if ($this->access->accepts($given)) {
             return $next($request);

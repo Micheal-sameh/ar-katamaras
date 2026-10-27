@@ -36,6 +36,14 @@ class ChurchAccess
         return $pattern !== '' && @preg_match('~^(?:'.str_replace('~', '\~', $pattern).')$~i', $given) === 1;
     }
 
+    /** The Android / Windows apps' key (READINGS_APP_KEY): lets them in without a church code. */
+    public function acceptsApp(string $given): bool
+    {
+        $key = trim((string) config('readings.access.app_key'));
+
+        return $key !== '' && $given !== '' && hash_equals($key, trim($given));
+    }
+
     /** @return list<string> */
     private function codes(): array
     {

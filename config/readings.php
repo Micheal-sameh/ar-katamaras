@@ -127,7 +127,10 @@ return [
     'access' => [
         'codes' => array_values(array_filter(array_map('trim', explode(',', (string) env('READINGS_ACCESS_CODE').','.(string) env('READINGS_ACCESS_CODES'))))),
         'pattern' => env('READINGS_ACCESS_PATTERN'),
-        'max_failures_per_minute' => (int) env('READINGS_ACCESS_MAX_FAILURES', 10), // wrong codes per IP
+        // The Android / Windows apps send this (X-App-Key) instead of asking for a code, so only the website is gated.
+        // It ships inside the apps: it keeps casual visitors out, not someone who goes looking for it.
+        'app_key' => env('READINGS_APP_KEY'),
+        'max_failures_per_minute' => (int) env('READINGS_ACCESS_MAX_FAILURES', 5), // wrong codes per IP
     ],
 
     // GET /api/readings/range: how many stored days one request may return (the apps ask for 14).
@@ -144,7 +147,7 @@ return [
         'future_days' => (int) env('READINGS_FUTURE_DAYS', 366),
 
         // Requests per minute per client IP.
-        'throttle_per_minute' => (int) env('READINGS_THROTTLE_PER_MINUTE', 60),
+        'throttle_per_minute' => (int) env('READINGS_THROTTLE_PER_MINUTE', 30),
 
         // Reverse proxy / CDN in front of the app (needed for correct client IPs and https):
         // "*" to trust any (only safe if the app is reachable solely through the proxy),

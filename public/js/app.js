@@ -33,6 +33,7 @@
       appName: 'قراءات اليوم', today: 'اليوم', calendar: 'التقويم', synaxarium: 'السنكسار', settings: 'الإعدادات',
       previous: 'اليوم السابق', next: 'اليوم التالي', nextReading: 'القراءة التالية', prevReading: 'القراءة السابقة', selectDate: 'اختر التاريخ', switchLang: 'English',
       focus: 'وضع القراءة', presentMode: 'عرض تقديمي', scrollMode: 'عرض بالتمرير', slideNext: 'الشريحة التالية', slidePrev: 'الشريحة السابقة', headerLabel: 'شريط عنوان القراءة', headerKeep: 'ثابت', headerScroll: 'يتحرك مع النص', fullscreen: 'ملء الشاشة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
+      eveningLabel: 'بداية قراءات اليوم التالي', eveningHint: 'بعد هذه الساعة تُعرض قراءات اليوم التالي', eveningOff: 'منتصف الليل فقط',
       reload: 'إعادة تحميل التطبيق', darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
       appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', fontType: 'نوع الخط', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
       light: 'فاتح', dark: 'داكن', auto: 'تلقائي', preview: 'معاينة النص', previewText: 'كلامك سراج لرجلي ونور لسبيلي.',
@@ -52,6 +53,7 @@
       appName: "Today's Readings", today: 'Today', calendar: 'Calendar', synaxarium: 'Synaxarium', settings: 'Settings',
       previous: 'Previous day', next: 'Next day', nextReading: 'Next reading', prevReading: 'Previous reading', selectDate: 'Choose a date', switchLang: 'العربية',
       focus: 'Reading focus', presentMode: 'Presentation view', scrollMode: 'Scrolling view', slideNext: 'Next slide', slidePrev: 'Previous slide', headerLabel: 'Reading header bar', headerKeep: 'Stays visible', headerScroll: 'Scrolls away', fullscreen: 'Full screen', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
+      eveningLabel: "Next day's readings start at", eveningHint: "From this hour, tomorrow's readings are shown", eveningOff: 'Midnight only',
       reload: 'Reload app', darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
       appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', fontType: 'Font type', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
       light: 'Light', dark: 'Dark', auto: 'Auto', preview: 'Text preview', previewText: 'Your word is a lamp to my feet and a light to my path.',
@@ -96,7 +98,12 @@
   const pad = (n) => String(n).padStart(2, '0');
   const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; // device-local, never UTC
   const parseISO = (iso) => { const [y, m, d] = iso.split('-').map(Number); return new Date(y, m - 1, d); };
-  const todayISO = () => toISO(new Date());
+  // The Coptic day starts at sunset: from 6 pm to midnight the readings are tomorrow's.
+  // The hour is a setting (24 = never switch early, the day turns at midnight).
+  const EVENING_DEFAULT = 18;
+  let eveningHour = EVENING_DEFAULT;
+  try { const v = parseInt(localStorage.getItem('eveningHour'), 10); if (v >= 12 && v <= 24) eveningHour = v; } catch (e) { /* storage blocked: keep the default */ }
+  const todayISO = () => { const d = new Date(); if (d.getHours() >= eveningHour) d.setDate(d.getDate() + 1); return toISO(d); };
   const addDays = (iso, n) => { const d = parseISO(iso); d.setDate(d.getDate() + n); return toISO(d); };
 
   const store = {
@@ -138,6 +145,8 @@
   const num = (n) => (isAr() ? String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]) : String(n));
 
   // ---------------------------------------------------------------- formatting
+  // From the evening hour "today" is tomorrow's Coptic day, but the calendar date shown stays the real one.
+  const shownDate = (iso) => (iso === todayISO() ? toISO(new Date()) : iso);
   function fmtGregorian(iso) {
     return new Intl.DateTimeFormat(t().locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(parseISO(iso));
   }
@@ -337,8 +346,8 @@
         render();
         return;
       }
+      if (e && e.status === 401) { state.status = 'locked'; state.codeError = ''; render(); return; } // before the saved copy: a saved day must not get round the code
       if (stored) { state.fromStore = true; render(); return; } // offline / server down: keep the saved copy
-      if (e && e.status === 401) { state.status = 'locked'; state.codeError = ''; render(); return; }
       if (e && e.status === 422) state.status = 'range';
       else { state.status = 'error'; state.errorMessage = (e && e.serverMessage) || ''; }
       render();
@@ -407,7 +416,7 @@
     return `<header class="app-header"><div class="header-inner">
       <button type="button" class="brand" data-act="nav" data-screen="today" aria-label="${esc(tr.appName)}">
         <span class="brand-mark">${icon('cross', 18)}</span>
-        <span><strong>${esc(tr.appName)}</strong><small>${esc(fmtCoptic(c))} · ${esc(fmtGregorian(state.date))}</small></span>
+        <span><strong>${esc(tr.appName)}</strong><small>${esc(fmtCoptic(c))} · ${esc(fmtGregorian(shownDate(state.date)))}</small></span>
       </button>
       <nav class="desktop-nav" aria-label="${esc(tr.mainNav)}">${nav}</nav>
       <div class="header-actions">
@@ -601,7 +610,7 @@
     const c = copticOf(state.date);
     const list = state.status === 'ok' ? `<div class="sections-list">${state.data.sections.map(sectionCard).join('')}</div>` : statusBlock();
     return `${controlBar()}<div class="page-shell">${sidebar()}<main class="reading-column">
-      <div class="mobile-date"><span>${esc(fmtCoptic(c))}</span><strong>${esc(fmtGregorian(state.date))}</strong></div>
+      <div class="mobile-date"><span>${esc(fmtCoptic(c))}</span><strong>${esc(fmtGregorian(shownDate(state.date)))}</strong></div>
       ${banner()}${list}</main></div>`;
   }
 
@@ -609,9 +618,9 @@
     const tr = t();
     const c = copticOf(state.date);
     return `<main class="content-page narrow-page">
-      <div class="page-title"><span class="eyebrow">${esc(tr.selectDate)}</span><h1>${esc(tr.calendar)}</h1><p>${esc(fmtGregorian(todayISO()))}</p></div>
+      <div class="page-title"><span class="eyebrow">${esc(tr.selectDate)}</span><h1>${esc(tr.calendar)}</h1><p>${esc(fmtGregorian(toISO(new Date())))}</p></div>
       ${calendarCard()}
-      <div class="selected-date-card"><div><strong>${esc(fmtGregorian(state.date))}</strong><span>${esc(fmtCoptic(c))}</span></div>
+      <div class="selected-date-card"><div><strong>${esc(fmtGregorian(shownDate(state.date)))}</strong><span>${esc(fmtCoptic(c))}</span></div>
         ${button({ act: 'openDay', variant: 'primary', label: tr.openReadings })}</div>
     </main>`;
   }
@@ -626,7 +635,7 @@
     else if (!sec) inner = state.status === 'ok' ? `<div class="empty-state"><strong>${esc(tr.noSynax)}</strong></div>` : statusBlock();
     else {
       const reads = sec.subSections.flatMap((s) => s.readings);
-      inner = `<div class="page-title centered"><span class="eyebrow">${esc(fmtCoptic(c))}</span><h1>${esc(reads[0].title || sec.title)}</h1><p>${esc(fmtGregorian(state.date))}</p></div>
+      inner = `<div class="page-title centered"><span class="eyebrow">${esc(fmtCoptic(c))}</span><h1>${esc(reads[0].title || sec.title)}</h1><p>${esc(fmtGregorian(shownDate(state.date)))}</p></div>
         <article class="synaxarium-copy" style="--reading-size:${state.fontSize}px">${reads.map((r) => (r.paragraphs.length ? r.paragraphs : r.passages.flatMap((p) => p.verses.map((v) => v.text))).map((p) => `<p>${esc(p)}</p>`).join('')).join('')}</article>`;
     }
     return `<main class="content-page text-page"><div class="ornament"><span></span>${icon('cross', 18)}<span></span></div>${banner()}${inner}<div class="ornament bottom"><span></span>${icon('cross', 14)}<span></span></div></main>`;
@@ -657,6 +666,8 @@
           <div class="font-preview" style="--reading-size:${state.fontSize}px"><span>${esc(tr.preview)}</span><p>${esc(tr.previewText)}</p></div></div>
         <div class="setting-row stacked"><div><strong>${esc(tr.scrollSpeed)}</strong><small>${num(state.scrollSpeed)}</small></div>
           <input aria-label="${esc(tr.scrollSpeed)}" type="range" min="${SPEED_MIN}" max="${SPEED_MAX}" value="${state.scrollSpeed}" data-input="speed"></div>
+        <div class="setting-row"><div><strong>${esc(tr.eveningLabel)}</strong><small>${esc(tr.eveningHint)}</small></div>
+          <select class="font-select" aria-label="${esc(tr.eveningLabel)}" data-input="evening">${Array.from({ length: 13 }, (_, i) => 12 + i).map((h) => `<option value="${h}"${h === eveningHour ? ' selected' : ''}>${esc(h === 24 ? tr.eveningOff : `${num(h)}:00`)}</option>`).join('')}</select></div>
         ${churchCode() ? `<div class="setting-row"><div><strong>${esc(tr.codeTitle)}</strong></div>${button({ act: 'changeCode', label: tr.codeChange })}</div>` : ''}
         <div class="setting-row"><div><strong>${esc(tr.headerLabel)}</strong><small>${esc(state.stickyHeader ? tr.headerKeep : tr.headerScroll)}</small></div>
           ${seg([['setHeader', tr.headerKeep, state.stickyHeader, '', 'data-v="1"'], ['setHeader', tr.headerScroll, !state.stickyHeader, '', 'data-v="0"']])}</div>
@@ -924,6 +935,12 @@
   });
   document.addEventListener('input', (e) => {
     if (e.target.dataset && e.target.dataset.input === 'family') setFamily(e.target.value);
+    if (e.target.dataset && e.target.dataset.input === 'evening') {
+      eveningHour = clamp(parseInt(e.target.value, 10) || EVENING_DEFAULT, 12, 24);
+      store.set('eveningHour', String(eveningHour));
+      checkNewDay();
+      render();
+    }
     if (e.target.dataset && e.target.dataset.input === 'bible') {
       const list = (state.data && state.data.bibles) || [];
       const picked = Number(e.target.value);
@@ -962,13 +979,14 @@
   window.addEventListener('online', () => { state.online = true; render(); load(); setTimeout(syncAhead, 3000); });
   window.addEventListener('offline', () => { state.online = false; render(); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (state.theme === 'auto') render(); });
-  // device passes midnight while the app stays open: follow the new day if the user was on "today"
+  // the day turns over (6 pm) while the app stays open: follow the new day if the user was on "today"
   let lastToday = todayISO();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible') return;
+  function checkNewDay() {
     const now = todayISO();
     if (now !== lastToday) { if (state.date === lastToday) { lastToday = now; goDate(now); return; } lastToday = now; render(); }
-  });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkNewDay(); });
+  setInterval(() => { if (document.visibilityState === 'visible') checkNewDay(); }, 60000);
 
   // ---------------------------------------------------------------- boot
   if ('serviceWorker' in navigator && !DEMO && location.protocol !== 'file:') {
