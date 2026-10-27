@@ -6,15 +6,15 @@ use App\Http\Requests\RangeReadingsRequest;
 use App\Http\Requests\ShowReadingRequest;
 use App\Http\Resources\DailyReadingResource;
 use App\Http\Resources\ReadingRangeResource;
+use App\Services\ReadingLookupService;
 use App\Services\ReadingRangeService;
-use App\Services\ReadingService;
 
 class ReadingController extends Controller
 {
-    public function show(ShowReadingRequest $request, ReadingService $readings): DailyReadingResource
+    public function show(ShowReadingRequest $request, ReadingLookupService $readings): DailyReadingResource
     {
         return new DailyReadingResource(
-            $readings->getForDate($request->readingDate(), $request->language(), $request->bibleId()),
+            $readings->get($request->readingDate(), $request->language(), $request->bibleId()),
         );
     }
 

@@ -169,3 +169,12 @@ It asks for the server address on first start. This is simpler than the Tauri ro
   (2 days back, 16 ahead), so storage stays under about 1 MB per language (a day is roughly 40 KB) and never grows.
   Older and far-future days are deleted automatically.
 - **Desktop app without a server:** it reads Katameros directly, keeps the next 14 days on disk, and deletes days outside the same window at each start.
+
+## The year warm-up also starts on demand
+
+If a visitor (the mobile app, the website) asks for a day the server has not stored yet, the server fetches that day and
+**also queues the same warm-up as `php artisan readings:warm --days=365`** (`WarmYearJob`): it runs in chunks of
+`READINGS_YEAR_CHUNK_DAYS` (10) days, each queued after the previous one, so it fits the queue worker's 60 second limit.
+This works for `GET /api/readings/{date}` and for `/api/readings/range` when it reports `missing` days from today on.
+A missing day in the past does not start it (the warm-up begins at today). A cooldown (`READINGS_ONDEMAND_WARM_COOLDOWN`,
+360 minutes) means a burst of requests starts it once. The queue worker (`queue:work`) must be running for it to happen.

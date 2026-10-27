@@ -22,6 +22,12 @@ final class ReadingCacheKey
         return 'readings:warm-month:errors';
     }
 
+    /** Set while an on-demand year warm-up is cooling down (see YearWarmTrigger). */
+    public static function yearWarmRequested(): string
+    {
+        return 'readings:year-warm:requested';
+    }
+
     public static function lock(Language $language, CarbonInterface $date, int $bibleId = 0): string
     {
         return 'lock:'.self::for($language, $date, $bibleId);

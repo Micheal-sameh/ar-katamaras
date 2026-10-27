@@ -9,7 +9,11 @@ use Carbon\CarbonImmutable;
 /** Looks up several days that are already stored. It never fetches, so one call can never load the upstream API. */
 class ReadingRangeService
 {
-    public function __construct(private readonly ReadingService $readings) {}
+    public function __construct(
+        private readonly ReadingService $readings,
+        private readonly YearWarmTrigger $yearWarm,
+        private readonly CopticCalendarService $calendar,
+    ) {}
 
     /**
      * @return array{from: CarbonImmutable, days: list<DailyReadingDto>, missing: list<string>}
@@ -27,6 +31,12 @@ class ReadingRangeService
             } else {
                 $missing[] = $date->toDateString();
             }
+        }
+
+        // Days the server does not have yet (from today on): start the whole-year warm-up so they get stored.
+        $today = $this->calendar->today()->toDateString();
+        if (array_filter($missing, fn (string $day) => $day >= $today) !== []) {
+            $this->yearWarm->requestIfNeeded();
         }
 
         return ['from' => $from, 'days' => $found, 'missing' => $missing];

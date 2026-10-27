@@ -66,6 +66,11 @@ return [
 
         // readings:warm-year: keeps this many days ahead stored on the server (the whole year), topped up weekly.
         'year_days' => (int) env('READINGS_YEAR_DAYS', 365),
+
+        // When a visitor asks for a day that is not stored, the same warm-up starts by itself (queued, in chunks of
+        // this many days), at most once per cooldown.
+        'year_chunk_days' => (int) env('READINGS_YEAR_CHUNK_DAYS', 10),
+        'on_demand_cooldown_minutes' => (int) env('READINGS_ONDEMAND_WARM_COOLDOWN', 360),
         'sleep_seconds' => (int) env('READINGS_WARM_SLEEP', 1),
         'alert_below_days' => (int) env('READINGS_ALERT_BELOW_DAYS', 3),
         'retry_delays' => [60, 300, 900], // seconds: 1, 5, 15 minutes
