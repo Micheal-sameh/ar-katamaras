@@ -19,7 +19,13 @@ class ReadingsHttpCache
             return $response;
         }
 
-        $response->setPublic();
+        // With a church code, a shared cache (Cloudflare, a proxy) must never hand a stored copy to someone without it.
+        if ((string) config('readings.access.code') !== '') {
+            $response->setPrivate();
+            $response->headers->set('Vary', 'X-Church-Code');
+        } else {
+            $response->setPublic();
+        }
         $response->setMaxAge((int) config('readings.http.max_age'));
         $response->setEtag(md5((string) $response->getContent()));
         $response->isNotModified($request); // turns the response into a 304 when If-None-Match matches

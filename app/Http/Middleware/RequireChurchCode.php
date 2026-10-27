@@ -1,0 +1,44 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Symfony\Component\HttpFoundation\Response;
+
+/**
+ * Keeps the readings to people who were given the church access code (READINGS_ACCESS_CODE).
+ * The apps send it in the X-Church-Code header. With no code configured, everything is open.
+ * Wrong guesses are limited per IP, so the code cannot be tried out by a script.
+ */
+class RequireChurchCode
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        $code = (string) config('readings.access.code');
+        if ($code === '') {
+            return $next($request);
+        }
+
+        $given = (string) $request->header('X-Church-Code', '');
+        if ($given !== '' && hash_equals($code, $given)) {
+            return $next($request);
+        }
+
+        $key = 'church-code:'.$request->ip();
+        $max = max(1, (int) config('readings.access.max_failures_per_minute'));
+
+        if (RateLimiter::tooManyAttempts($key, $max)) {
+            return response()->json(['message' => 'Too many wrong codes. Try again in a minute.', 'code' => 'church_code_blocked'], 429, [
+                'Retry-After' => (string) RateLimiter::availableIn($key),
+            ]);
+        }
+
+        if ($given !== '') { // no code at all is normal on the first visit; only a wrong code counts as a miss
+            RateLimiter::hit($key, 60);
+        }
+
+        return response()->json(['message' => 'The church access code is required.', 'code' => 'church_code_required'], 401);
+    }
+}

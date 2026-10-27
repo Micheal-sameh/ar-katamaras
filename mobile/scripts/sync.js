@@ -58,9 +58,9 @@ fs.writeFileSync(path.join(to, 'js/config.js'),
   window.fetch = function (input, init) {
     var raw = typeof input === 'string' ? input : input.url;
     if (raw.indexOf('/api/readings/') !== 0) return realFetch(input, init);
-    var isRange = raw.indexOf('/api/readings/range') === 0;
+    var isRange = raw.indexOf('/api/readings/range') === 0 || raw.indexOf('/api/readings/access') === 0; // no Katameros fallback for these
     return viaServer(raw, init).then(function (res) {
-      if (res.ok || isRange || res.status === 429 || res.status === 422) return res;
+      if (res.ok || isRange || res.status === 429 || res.status === 422 || res.status === 401) return res;
       return viaKatameros(raw);
     }, function () {
       return isRange ? new Response('{}', { status: 503 }) : viaKatameros(raw);

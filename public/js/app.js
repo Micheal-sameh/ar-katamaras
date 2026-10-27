@@ -32,12 +32,13 @@
     ar: {
       appName: 'قراءات اليوم', today: 'اليوم', calendar: 'التقويم', synaxarium: 'السنكسار', settings: 'الإعدادات',
       previous: 'اليوم السابق', next: 'اليوم التالي', nextReading: 'القراءة التالية', prevReading: 'القراءة السابقة', selectDate: 'اختر التاريخ', switchLang: 'English',
-      focus: 'وضع القراءة', headerLabel: 'شريط عنوان القراءة', headerKeep: 'ثابت', headerScroll: 'يتحرك مع النص', fullscreen: 'ملء الشاشة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
+      focus: 'وضع القراءة', presentMode: 'عرض تقديمي', scrollMode: 'عرض بالتمرير', slideNext: 'الشريحة التالية', slidePrev: 'الشريحة السابقة', headerLabel: 'شريط عنوان القراءة', headerKeep: 'ثابت', headerScroll: 'يتحرك مع النص', fullscreen: 'ملء الشاشة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
       darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
       appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', fontType: 'نوع الخط', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
       light: 'فاتح', dark: 'داكن', auto: 'تلقائي', preview: 'معاينة النص', previewText: 'كلامك سراج لرجلي ونور لسبيلي.',
       offlineBanner: 'أنت غير متصل — تعرض القراءات المحفوظة', savedBanner: 'تعذر الاتصال بالخادم — تعرض نسخة محفوظة على هذا الجهاز',
       errorTitle: 'تعذر تحميل القراءات', errorBody: 'لا توجد نسخة محفوظة لهذا اليوم، وتعذر الاتصال بالخادم. حاول مرة أخرى أو اختر يومًا آخر.',
+      codeTitle: 'رمز الكنيسة', codeBody: 'هذا التطبيق لأبناء الكنيسة. اكتب الرمز الذي أعطته لك الكنيسة.', codePlaceholder: 'الرمز', codeSave: 'دخول', codeWrong: 'الرمز غير صحيح. حاول مرة أخرى.', codeBlocked: 'محاولات كثيرة خاطئة. انتظر دقيقة ثم حاول.', codeOffline: 'تعذر التحقق من الرمز الآن. تأكد من الاتصال وحاول مرة أخرى.', codeChange: 'تغيير رمز الكنيسة',
       emptyTitle: 'لا توجد قراءات لهذا اليوم', emptyBody: 'يمكنك اختيار يوم آخر.',
       slowLoading: 'نجلب قراءات هذا اليوم لأول مرة، وقد يستغرق ذلك بضع ثوانٍ…',
       chapter: 'الأصحاح', bibleLabel: 'نسخة الكتاب المقدس', bibleDefault: '(الافتراضية)',
@@ -50,12 +51,13 @@
     en: {
       appName: "Today's Readings", today: 'Today', calendar: 'Calendar', synaxarium: 'Synaxarium', settings: 'Settings',
       previous: 'Previous day', next: 'Next day', nextReading: 'Next reading', prevReading: 'Previous reading', selectDate: 'Choose a date', switchLang: 'العربية',
-      focus: 'Reading focus', headerLabel: 'Reading header bar', headerKeep: 'Stays visible', headerScroll: 'Scrolls away', fullscreen: 'Full screen', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
+      focus: 'Reading focus', presentMode: 'Presentation view', scrollMode: 'Scrolling view', slideNext: 'Next slide', slidePrev: 'Previous slide', headerLabel: 'Reading header bar', headerKeep: 'Stays visible', headerScroll: 'Scrolls away', fullscreen: 'Full screen', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
       darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
       appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', fontType: 'Font type', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
       light: 'Light', dark: 'Dark', auto: 'Auto', preview: 'Text preview', previewText: 'Your word is a lamp to my feet and a light to my path.',
       offlineBanner: 'You are offline — showing saved readings', savedBanner: 'Server unreachable — showing a copy saved on this device',
       errorTitle: 'Could not load readings', errorBody: 'There is no saved copy for this day and the server cannot be reached. Try again or pick another day.',
+      codeTitle: 'Church code', codeBody: 'This app is for members of the church. Enter the code the church gave you.', codePlaceholder: 'Code', codeSave: 'Enter', codeWrong: 'That code is not right. Try again.', codeBlocked: 'Too many wrong tries. Wait a minute and try again.', codeOffline: 'Could not check the code right now. Check your connection and try again.', codeChange: 'Change church code',
       emptyTitle: 'No readings for this day', emptyBody: 'Choose another day.',
       slowLoading: 'Fetching this day for the first time. It can take a few seconds…',
       chapter: 'Chapter', bibleLabel: 'Bible version', bibleDefault: '(default)',
@@ -81,6 +83,7 @@
     refresh: '<path d="M20 11a8 8 0 1 0-2.34 5.66" /><path d="M20 5v6h-6" />',
     book: '<path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v18H7.5A3.5 3.5 0 0 0 4 23V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v18h3.5a3.5 3.5 0 0 1 3.5 3V5.5Z" />',
     settings: '<circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V21h-4v-.08A1.7 1.7 0 0 0 9 19.37a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.63 15a1.7 1.7 0 0 0-1.55-1H3v-4h.08A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.63a1.7 1.7 0 0 0 1-1.55V3h4v.08A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.37 9a1.7 1.7 0 0 0 1.55 1H21v4h-.08A1.7 1.7 0 0 0 19.37 15Z" />',
+    slides: '<rect x="3" y="4" width="18" height="12" rx="2" /><path d="M8 21h8M12 16v5" />',
     wifi: '<path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0" /><circle cx="12" cy="20" r=".5" />',
   };
   const icon = (name, size = 20) =>
@@ -123,6 +126,9 @@
     tabs: {},
     focus: null, // {sec, tab}
     auto: false,
+    present: store.get('present', '1') !== '0', // desktop: show the reading as slides
+    slide: 0, // current slide; -1 = the last one
+    slideCount: 1,
   };
   function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
 
@@ -199,6 +205,9 @@
   // The chosen Bible version per language (0 = the default one). Only offered when the server lists several.
   const bibleChoices = (() => { try { return JSON.parse(store.get('bibles', '{}')) || {}; } catch (e) { return {}; } })();
   const bibleFor = (lang) => Number(bibleChoices[lang]) || 0;
+  // The church access code (when the server asks for one) goes along with every request.
+  const churchCode = () => store.get('churchCode', '');
+  const apiHeaders = () => { const h = { Accept: 'application/json' }; const c = churchCode(); if (c) h['X-Church-Code'] = c; return h; };
   const readingUrl = (iso, lang) => `${API_BASE}/${iso}?lang=${lang}${bibleFor(lang) ? `&bible=${bibleFor(lang)}` : ''}`;
   const storeKey = (iso, lang) => `${STORE_PREFIX}${lang}${bibleFor(lang) ? `b${bibleFor(lang)}` : ''}:${iso}`;
   function readStored(iso, lang) {
@@ -239,8 +248,9 @@
     syncing = true;
     try {
       const from = todayISO();
-      const res = await fetch(`${API_BASE}/range?from=${from}&days=${SYNC_DAYS}&lang=${lang}${bibleFor(lang) ? `&bible=${bibleFor(lang)}` : ''}`, { headers: { Accept: 'application/json' }, priority: 'low' });
+      const res = await fetch(`${API_BASE}/range?from=${from}&days=${SYNC_DAYS}&lang=${lang}${bibleFor(lang) ? `&bible=${bibleFor(lang)}` : ''}`, { headers: apiHeaders(), priority: 'low' });
       if (res.status === 429) { pauseRequests(clamp(parseInt(res.headers.get('Retry-After'), 10) || 30, 5, 120)); return; }
+      if (res.status === 401) return; // the code screen is shown by the next day request
       if (!res.ok) return; // an older server without /range: the app still works day by day
       const body = await res.json();
       const days = body && body.data && Array.isArray(body.data.days) ? body.data.days : [];
@@ -252,7 +262,7 @@
 
   async function fetchDay(iso, lang) {
     if (DEMO) return window.DemoReadings.build(iso, lang);
-    const res = await fetch(readingUrl(iso, lang), { headers: { Accept: 'application/json' } });
+    const res = await fetch(readingUrl(iso, lang), { headers: apiHeaders() });
     if (!res.ok) {
       const err = new Error(`HTTP ${res.status}`);
       err.status = res.status;
@@ -327,6 +337,7 @@
         return;
       }
       if (stored) { state.fromStore = true; render(); return; } // offline / server down: keep the saved copy
+      if (e && e.status === 401) { state.status = 'locked'; state.codeError = ''; render(); return; }
       if (e && e.status === 422) state.status = 'range';
       else { state.status = 'error'; state.errorMessage = (e && e.serverMessage) || ''; }
       render();
@@ -344,7 +355,8 @@
     if (prefetching.has(key) || readStored(iso, lang)) return;
     prefetching.add(key);
     try {
-      const res = await fetch(readingUrl(iso, lang), { headers: { Accept: 'application/json' }, priority: 'low' });
+      const res = await fetch(readingUrl(iso, lang), { headers: apiHeaders(), priority: 'low' });
+      if (res.status === 401) return;
       if (res.status === 429) pauseRequests(clamp(parseInt(res.headers.get('Retry-After'), 10) || 30, 5, 120));
       if (res.ok) {
         const raw = await res.json();
@@ -552,8 +564,18 @@
     </section>`;
   }
 
+  /** Asks for the church code. Shown instead of the readings whenever the server answers 401. */
+  function codeBlock() {
+    const tr = t();
+    return `<div class="empty-state code-gate"><span class="empty-icon">${icon('cross')}</span><strong>${esc(tr.codeTitle)}</strong><p>${esc(tr.codeBody)}</p>
+      <form class="code-form" data-form="code"><input class="code-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${esc(tr.codePlaceholder)}" placeholder="${esc(tr.codePlaceholder)}" data-input="code">
+        <button type="submit" class="button button--primary">${esc(tr.codeSave)}</button></form>
+      ${state.codeError ? `<p class="code-error" role="alert">${esc(state.codeError)}</p>` : ''}</div>`;
+  }
+
   function statusBlock() {
     const tr = t();
+    if (state.status === 'locked') return codeBlock();
     if (state.status === 'loading') {
       const hint = state.slow ? `<p class="slow-hint">${esc(tr.slowLoading)}</p>` : '';
       return `<div role="status" aria-label="${esc(tr.loading)}">${hint}${[0, 1, 2, 3].map(() => '<div class="skeleton-card"><span></span><span></span><span></span><span></span></div>').join('')}</div>`;
@@ -633,6 +655,7 @@
           <div class="font-preview" style="--reading-size:${state.fontSize}px"><span>${esc(tr.preview)}</span><p>${esc(tr.previewText)}</p></div></div>
         <div class="setting-row stacked"><div><strong>${esc(tr.scrollSpeed)}</strong><small>${num(state.scrollSpeed)}</small></div>
           <input aria-label="${esc(tr.scrollSpeed)}" type="range" min="${SPEED_MIN}" max="${SPEED_MAX}" value="${state.scrollSpeed}" data-input="speed"></div>
+        ${churchCode() ? `<div class="setting-row"><div><strong>${esc(tr.codeTitle)}</strong></div>${button({ act: 'changeCode', label: tr.codeChange })}</div>` : ''}
         <div class="setting-row"><div><strong>${esc(tr.headerLabel)}</strong><small>${esc(state.stickyHeader ? tr.headerKeep : tr.headerScroll)}</small></div>
           ${seg([['setHeader', tr.headerKeep, state.stickyHeader, '', 'data-v="1"'], ['setHeader', tr.headerScroll, !state.stickyHeader, '', 'data-v="0"']])}</div>
         <div class="setting-row"><div><strong>${esc(tr.theme)}</strong><small>${esc(tr[state.theme])}</small></div>
@@ -662,9 +685,107 @@
         ${button({ act: 'fontPlus', variant: 'icon', title: tr.fontLarger, ic: '<span class="a-control">A+</span>' })}
         ${button({ act: 'toggleTheme', variant: 'icon', title: isDark() ? tr.lightMode : tr.darkMode, ic: icon(isDark() ? 'sun' : 'moon') })}
         ${canFullscreen() ? button({ act: 'fullscreen', variant: 'icon', active: inFullscreen(), title: tr.fullscreen, ic: icon(inFullscreen() ? 'shrink' : 'expand') }) : ''}
+        ${isDesktop() ? button({ act: 'togglePresent', variant: 'icon', title: tr.presentMode, ic: icon('slides') }) : ''}
         ${button({ act: 'autoScroll', variant: 'icon', active: state.auto, title: tr.autoScroll, ic: icon('scroll') })}
         ${state.auto ? `${button({ act: 'speedDown', variant: 'icon', title: tr.slower, ic: '<span class="a-control">«</span>', extra: state.scrollSpeed <= SPEED_MIN ? ' disabled' : '' })}<span class="speed-value" aria-live="polite">${num(state.scrollSpeed)}</span>${button({ act: 'speedUp', variant: 'icon', title: tr.faster, ic: '<span class="a-control">»</span>', extra: state.scrollSpeed >= SPEED_MAX ? ' disabled' : '' })}` : ''}
       </div></div>`;
+  }
+
+  // ---------------------------------------------------------------- presentation (desktop slides)
+  const desktopQuery = window.matchMedia('(min-width: 901px)');
+  const isDesktop = () => desktopQuery.matches;
+  const presenting = () => !!state.focus && state.present && isDesktop();
+  const slideSize = () => state.fontSize + 14;
+
+  /** The reading cut into small blocks (a verse, a paragraph, a heading…) that are then packed onto slides. */
+  function slideUnits(sub) {
+    const units = [];
+    let pre = '';
+    const push = (html) => { units.push(pre + html); pre = ''; };
+    if (sub.introduction) push(`<p class="reading-intro">${esc(sub.introduction)}</p>`);
+    sub.readings.forEach((r) => {
+      const heading = r.title && r.title !== sub.title ? r.title : (sub.readings.length > 1 ? r.label : '');
+      if (heading) pre += `<h3>${esc(heading)}</h3>`;
+      if (r.introduction) push(`<p class="reading-intro">${esc(r.introduction)}</p>`);
+      r.passages.forEach((p) => {
+        const ref = [p.book, p.ref].filter(Boolean).join(' ');
+        if (ref) pre += `<div class="chip-row"><span class="reference-chip">${esc(ref)}</span></div>`;
+        let chapter = 0;
+        p.verses.forEach((v) => {
+          const mark = v.chapter && chapter && v.chapter !== chapter ? `<div class="chapter-mark">${esc(t().chapter)} ${esc(num(v.chapter))}</div>` : '';
+          if (v.chapter) chapter = v.chapter;
+          push(`${mark}<div class="verse-row">${v.number ? `<sup>${esc(num(v.number))}</sup>` : ''}<span>${esc(v.text)}</span></div>`);
+        });
+      });
+      r.paragraphs.forEach((x) => push(`<p class="slide-text">${esc(x)}</p>`));
+      if (r.conclusion) push(`<p class="reading-ending">${esc(r.conclusion)}</p>`);
+    });
+    if (pre) units.push(pre);
+    return units;
+  }
+
+  /** Packs the blocks onto slides by measuring them in a hidden copy of the stage, so each slide fills the screen without scrolling. */
+  function paginate(units) {
+    const probe = document.createElement('div');
+    probe.className = 'present slide-measure';
+    probe.style.setProperty('--reading-size', `${slideSize()}px`);
+    probe.innerHTML = '<div class="slide-body"><div class="slide-inner"></div></div>';
+    document.body.appendChild(probe);
+    const body = probe.firstChild;
+    const inner = body.firstChild;
+    const slides = [];
+    let cur = [];
+    units.forEach((u) => {
+      inner.insertAdjacentHTML('beforeend', u);
+      if (cur.length && inner.offsetHeight > body.clientHeight) {
+        slides.push(cur);
+        cur = [u];
+        inner.innerHTML = u;
+      } else cur.push(u);
+    });
+    if (cur.length) slides.push(cur);
+    probe.remove();
+    return slides.length ? slides : [['']];
+  }
+
+  function presentScreen() {
+    const tr = t();
+    const section = state.data && state.data.sections[state.focus.sec];
+    if (!section) { state.focus = null; return ''; }
+    const sub = section.subSections[state.focus.tab] || section.subSections[0];
+    const slides = paginate(slideUnits(sub));
+    const n = slides.length;
+    const i = state.slide < 0 ? n - 1 : Math.min(state.slide, n - 1);
+    state.slide = i;
+    state.slideCount = n;
+    const first = sub.readings[0];
+    const ref = first && first.passages[0] ? first.passages.map((p) => p.ref).filter(Boolean).join(' · ') : '';
+    const bar = (act, label, ic) => button({ act, variant: 'icon', title: label, ic });
+    return `<div class="present" data-act="slideNext" style="--reading-size:${slideSize()}px">
+      <div class="present-top" data-act="none">${button({ act: 'back', label: tr.back, ic: dirIcon(false) })}<span>${esc(section.title)} · ${esc(sub.title)}${ref ? ` · ${esc(ref)}` : ''}</span><span class="slide-counter">${num(i + 1)} / ${num(n)}</span></div>
+      <div class="slide-body"><div class="slide-inner">${slides[i].join('')}</div></div>
+      <div class="present-progress" style="width:${((i + 1) / n) * 100}%"></div>
+      <div class="floating-bar" data-act="none">
+        ${bar('back', tr.back, dirIcon(false))}<span class="divider"></span>
+        ${bar('slidePrev', tr.slidePrev, dirIcon(false))}${bar('slideNext', tr.slideNext, dirIcon(true))}<span class="divider"></span>
+        ${bar('fontMinus', tr.fontSmaller, '<span class="a-control">A−</span>')}${bar('fontPlus', tr.fontLarger, '<span class="a-control">A+</span>')}
+        ${bar('toggleTheme', isDark() ? tr.lightMode : tr.darkMode, icon(isDark() ? 'sun' : 'moon'))}
+        ${canFullscreen() ? button({ act: 'fullscreen', variant: 'icon', active: inFullscreen(), title: tr.fullscreen, ic: icon(inFullscreen() ? 'shrink' : 'expand') }) : ''}
+        ${bar('togglePresent', tr.scrollMode, icon('scroll'))}
+      </div></div>`;
+  }
+
+  function goSlide(delta) {
+    if (!state.focus) return;
+    if (delta > 0 && state.slide < state.slideCount - 1) state.slide++;
+    else if (delta < 0 && state.slide > 0) state.slide--;
+    else {
+      const target = (delta > 0 ? nextTarget : prevTarget)(state.focus.sec, state.focus.tab);
+      if (!target) return;
+      state.focus = { sec: target.sec, tab: target.tab };
+      state.slide = delta > 0 ? 0 : -1;
+    }
+    render();
   }
 
   function mobileNav() {
@@ -683,7 +804,7 @@
     document.documentElement.lang = state.lang;
     document.documentElement.dir = root.dir;
     document.title = t().appName;
-    if (state.focus) { root.innerHTML = focusScreen(); if (!state.focus) render(); return; }
+    if (state.focus) { root.innerHTML = presenting() ? presentScreen() : focusScreen(); if (!state.focus) render(); return; }
     const screens = { today: todayScreen, calendar: calendarScreen, synaxarium: synaxariumScreen, settings: settingsScreen };
     root.innerHTML = `${header()}${screens[state.screen]()}${mobileNav()}`;
   }
@@ -732,6 +853,7 @@
     calNext() { shiftMonth(1); },
     toggleLang() { setLang(isAr() ? 'en' : 'ar'); },
     setLang(el) { setLang(el.dataset.v); },
+    changeCode() { state.screen = 'today'; state.status = 'locked'; state.codeError = ''; window.scrollTo(0, 0); render(); },
     setHeader(el) { state.stickyHeader = el.dataset.v !== '0'; store.set('stickyHeader', state.stickyHeader ? '1' : '0'); render(); },
     toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); render(); },
     setTheme(el) { setTheme(el.dataset.v); render(); },
@@ -741,7 +863,7 @@
     fontPlus() { setFont(state.fontSize + 2); render(); },
     section(el) { const i = Number(el.dataset.i); state.open = state.open === i ? -1 : i; render(); },
     tab(el) { state.tabs[el.dataset.sec] = Number(el.dataset.i); render(); },
-    focus(el) { state.focus = { sec: Number(el.dataset.sec), tab: Number(el.dataset.i) }; enterFullscreen(); window.scrollTo(0, 0); render(); },
+    focus(el) { state.focus = { sec: Number(el.dataset.sec), tab: Number(el.dataset.i) }; state.slide = 0; enterFullscreen(); window.scrollTo(0, 0); render(); },
     fullscreen() { if (inFullscreen()) leaveFullscreen(); else enterFullscreen(); },
     nextReading(el) {
       const sec = Number(el.dataset.sec), tab = Number(el.dataset.i);
@@ -752,6 +874,10 @@
     back() { state.focus = null; stopAuto(); leaveFullscreen(); render(); },
     autoScroll() { state.auto = !state.auto; if (state.auto) { cancelAnimationFrame(rafId); autoLoop(); } render(); },
     retry() { load(); },
+    none() { /* clicks on the toolbars must not advance the slide */ },
+    slideNext() { goSlide(1); },
+    slidePrev() { goSlide(-1); },
+    togglePresent() { state.present = !state.present; store.set('present', state.present ? '1' : '0'); state.slide = 0; stopAuto(); window.scrollTo(0, 0); render(); },
   };
 
   function shiftMonth(delta) {
@@ -765,6 +891,33 @@
   document.addEventListener('click', (e) => {
     const el = e.target.closest('[data-act]');
     if (el && actions[el.dataset.act]) actions[el.dataset.act](el);
+  });
+  // The church code form: the typed code is checked with the server first and only kept when it is right.
+  document.addEventListener('submit', async (e) => {
+    const form = e.target.closest && e.target.closest('[data-form="code"]');
+    if (!form) return;
+    e.preventDefault();
+    const typed = String(form.querySelector('[data-input="code"]').value || '').trim();
+    if (!typed) return;
+    const tr = t();
+    const button = form.querySelector('button');
+    button.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/access`, { headers: { Accept: 'application/json', 'X-Church-Code': typed } });
+      if (res.ok) {
+        store.set('churchCode', typed);
+        state.codeError = '';
+        state.status = 'loading';
+        render();
+        load();
+        setTimeout(syncAhead, 1500);
+        return;
+      }
+      state.codeError = res.status === 429 ? tr.codeBlocked : res.status >= 500 ? tr.codeOffline : tr.codeWrong;
+    } catch (err) {
+      state.codeError = tr.codeOffline;
+    }
+    render();
   });
   document.addEventListener('input', (e) => {
     if (e.target.dataset && e.target.dataset.input === 'family') setFamily(e.target.value);
@@ -791,7 +944,18 @@
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && state.focus) actions.back();
+    if (!presenting() || e.altKey || e.ctrlKey || e.metaKey || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+    const forward = isAr() ? 'ArrowLeft' : 'ArrowRight';
+    const backward = isAr() ? 'ArrowRight' : 'ArrowLeft';
+    if ([forward, 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(e.key)) goSlide(1);
+    else if ([backward, 'ArrowUp', 'PageUp', 'Backspace'].includes(e.key)) goSlide(-1);
+    else if (e.key === 'Home') { state.slide = 0; render(); }
+    else if (e.key === 'End') { state.slide = -1; render(); }
+    else return;
+    e.preventDefault();
   });
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => { if (state.focus) { clearTimeout(resizeTimer); resizeTimer = setTimeout(render, 150); } });
   window.addEventListener('online', () => { state.online = true; render(); load(); setTimeout(syncAhead, 3000); });
   window.addEventListener('offline', () => { state.online = false; render(); });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (state.theme === 'auto') render(); });

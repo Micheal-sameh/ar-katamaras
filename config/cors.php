@@ -18,7 +18,7 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['Accept', 'Content-Type', 'If-None-Match'],
+    'allowed_headers' => ['Accept', 'Content-Type', 'If-None-Match', 'X-Church-Code'],
 
     'exposed_headers' => ['ETag', 'X-Readings-Source'],
 

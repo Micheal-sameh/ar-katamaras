@@ -120,6 +120,13 @@ return [
     | HTTP caching for GET /api/readings/{date}
     |--------------------------------------------------------------------------
     */
+    // Members only. When READINGS_ACCESS_CODE is set, the readings API answers only requests that carry this code
+    // (header X-Church-Code); the apps ask each person for it once. Empty = open to everyone.
+    'access' => [
+        'code' => env('READINGS_ACCESS_CODE'),
+        'max_failures_per_minute' => (int) env('READINGS_ACCESS_MAX_FAILURES', 10), // wrong codes per IP
+    ],
+
     // GET /api/readings/range: how many stored days one request may return (the apps ask for 14).
     'range' => [
         'max_days' => (int) env('READINGS_RANGE_MAX_DAYS', 31),

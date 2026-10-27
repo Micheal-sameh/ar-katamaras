@@ -178,3 +178,20 @@ If a visitor (the mobile app, the website) asks for a day the server has not sto
 This works for `GET /api/readings/{date}` and for `/api/readings/range` when it reports `missing` days from today on.
 A missing day in the past does not start it (the warm-up begins at today). A cooldown (`READINGS_ONDEMAND_WARM_COOLDOWN`,
 360 minutes) means a burst of requests starts it once. The queue worker (`queue:work`) must be running for it to happen.
+
+## Members only: the church access code
+
+Set `READINGS_ACCESS_CODE` in the server's `.env` (for Docker: `docker/app.env`) and restart/`php artisan config:clear`.
+From then on every reading request (`/api/readings/{date}`, `/range`, `/access`) must carry the code in the `X-Church-Code`
+header; without it the server answers 401 and fetches nothing. Leave it empty to keep the API open.
+
+- **Apps:** the website, the desktop app (server mode) and the Android app show a "Church code" screen when the server answers 401.
+  The typed code is checked with `GET /api/readings/access` and only kept when right. Settings has "Change church code";
+  if you change the code on the server, each device asks again.
+- **Guessing:** wrong codes are limited per IP (`READINGS_ACCESS_MAX_FAILURES`, default 10 a minute, then 429). The right code is never blocked,
+  so someone guessing on the church's shared Wi-Fi cannot lock the members out.
+- **Caching:** while a code is set the answers are `Cache-Control: private` with `Vary: X-Church-Code`, so Cloudflare or a proxy never hands a stored copy to someone without the code.
+  `/api/health` stays open for the uptime monitor.
+- **Rotating:** change `READINGS_ACCESS_CODE` and tell the members the new one. Keep it out of git (use `.env`, never `.env.example`).
+- **Limits:** a code only keeps casual outsiders out. It is in the members' phones, so anyone who is given it can share it.
+  The Android app still falls back to Katameros itself when your server is down (that data is public).

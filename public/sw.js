@@ -91,6 +91,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== location.origin) return; // anything else goes straight to the network
 
+  // The church-code check must always reach the server: a saved "OK" must never answer a wrong code.
+  if (url.pathname.endsWith('/readings/access')) return;
+
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(apiNetworkFirst(request));
   } else if (url.pathname.includes('/fonts/')) {
