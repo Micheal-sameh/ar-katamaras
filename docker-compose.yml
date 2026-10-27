@@ -36,6 +36,12 @@ services:
     volumes:
       - data:/data
       - storage:/var/www/html/storage
+    healthcheck: # php-fpm only listens after migrations and the config/route cache are done
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 9000"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
 
   web:
     build:
@@ -44,7 +50,8 @@ services:
     image: avarewase/readings-web:latest
     restart: unless-stopped
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     ports:
       # Bound to localhost: put HTTPS in front (Cloudflare Tunnel, Caddy, nginx, certbot ...).
       # Set BIND_ADDRESS=0.0.0.0 only if this host is reachable directly and you accept plain HTTP.
@@ -62,7 +69,7 @@ services:
   queue:
     <<: *app
     command: ["php", "artisan", "queue:work", "redis", "--queue=default", "--sleep=3", "--tries=3", "--timeout=60", "--max-time=3600"]
-    stop_grace_period: 70s # let a running job finish on `docker compose stop / up -d`
+    stop_grace_period: 30s # let a running job finish on `docker compose stop / up -d`
     environment:
       <<: *app-env
       WAIT_FOR_READY: "true"
