@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app's cross (see www/icons/icon.svg), sized to sit inside the circular splash icon mask. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="640"
+    android:viewportHeight="640">
+    <group android:translateX="64" android:translateY="64">
+        <path
+            android:fillColor="#FAF7F0"
+            android:pathData="M216,96h80v100h100v80H296v140h-80V276H116v-80h100V96Z" />
+    </group>
+</vector>

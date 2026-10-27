@@ -54,6 +54,15 @@ async function answer(request) {
   }
 }
 
+/** Installed copy only (the portable .exe cannot replace itself): downloads a newer release quietly and installs it when the app closes. */
+function checkForUpdates() {
+  if (!app.isPackaged || process.env.PORTABLE_EXECUTABLE_FILE) return;
+  const { autoUpdater } = require('electron-updater');
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('error', (e) => console.error('[update]', e && e.message));
+  autoUpdater.checkForUpdates().catch(() => { /* offline: try again next start */ });
+}
+
 /** Keeps the next days in the app's own cache (userData/days), politely, so it also works offline. */
 async function warm(days = 14) {
   if (readSettings().server) return; // with our own server, that server does the caching
@@ -118,6 +127,7 @@ if (!app.requestSingleInstanceLock()) {
     buildMenu();
     createWindow();
     warm();
+    checkForUpdates();
   });
   app.on('window-all-closed', () => app.quit());
 }

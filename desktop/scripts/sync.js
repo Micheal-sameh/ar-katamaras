@@ -5,7 +5,7 @@ const path = require('path');
 
 const from = path.resolve(__dirname, '../../public');
 const to = path.resolve(__dirname, '../app');
-const skip = new Set(['sw.js', 'index.php', 'robots.txt', 'favicon.ico', '.htaccess', 'storage', 'hot']);
+const skip = new Set(['sw.js', 'index.php', 'robots.txt', 'favicon.ico', '.htaccess', 'storage', 'hot', 'update']);
 
 fs.rmSync(to, { recursive: true, force: true });
 fs.cpSync(from, to, { recursive: true, filter: (src) => !skip.has(path.basename(src)) });

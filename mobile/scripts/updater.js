@@ -1,5 +1,5 @@
 /* On-the-fly updates: asks {baseUrl}/version.json and, if it names a newer web version than the one
-   running, downloads that bundle and uses it from the next launch. Generated into www/js/updater.js. */
+   running, downloads that bundle and switches to it straight away. Generated into www/js/updater.js. */
 (function () {
   var BASE_URL = '__BASE_URL__';
   var BUILT_IN = '__BUILT_IN__';
@@ -25,7 +25,7 @@
       .then(function (remote) {
         if (!remote || !remote.version || !remote.url || !newer(remote.version, running)) return;
         return updater.download({ url: remote.url, version: remote.version, checksum: remote.checksum || undefined })
-          .then(function (bundle) { return updater.next({ id: bundle.id }); });
+          .then(function (bundle) { return updater.set({ id: bundle.id }); });
       });
   }).catch(function () { /* offline or host down: try again next launch */ });
 })();

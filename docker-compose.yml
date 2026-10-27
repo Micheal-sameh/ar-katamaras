@@ -52,6 +52,8 @@ services:
     depends_on:
       app:
         condition: service_healthy
+    volumes:
+      - ./public/desktop:/var/www/html/public/desktop:ro # Windows app installers (desktop/scripts/publish.sh), no rebuild needed
     ports:
       # Bound to localhost: put HTTPS in front (Cloudflare Tunnel, Caddy, nginx, certbot ...).
       # Set BIND_ADDRESS=0.0.0.0 only if this host is reachable directly and you accept plain HTTP.

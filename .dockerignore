@@ -21,3 +21,4 @@ database/*.sqlite
 bootstrap/cache/*.php
 docs
 *.md
+public/desktop

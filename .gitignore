@@ -24,3 +24,4 @@ yarn-error.log
 
 # Docker
 /docker/app.env
+/public/desktop/
