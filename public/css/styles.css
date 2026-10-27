@@ -44,6 +44,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   color: var(--ink);
   transition: background 220ms ease, color 220ms ease;
 }
+.theme-dark.app, .theme-dark .app { background: var(--paper); }
 .app[dir='rtl'] { font-family: 'Noto Sans Arabic', Inter, sans-serif; }
 
 .theme-dark {
@@ -54,7 +55,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
   --ink: #f6eddf;
   --ink-soft: #b9ab9b;
   --accent: #e0a458;
-  --accent-soft: #2a1f14;
+  --accent-soft: #1c1c1c;
   --gold: #e0a458;
   --border: #262626;
   --border-strong: #3a3a3a;
@@ -340,5 +341,9 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .slide-inner .chapter-mark { font-size: .4em; margin: .6em 0 .3em; }
 .present-progress { position: absolute; bottom: 0; inset-inline-start: 0; height: 4px; background: var(--accent); transition: width 200ms ease; }
 .present .floating-bar { cursor: default; }
-html:has(.focus-mode), html:has(.present) { scrollbar-width: none; }
 html:has(.present) { overflow: hidden; }
+
+/* ---------- friendly scrollbar ---------- */
+/* the theme variables live on .app, not <html>, so the page-level scrollbar needs its own dark colours */
+html { scrollbar-width: thin; scrollbar-color: #d6c7b7 transparent; }
+html.is-dark { scrollbar-color: #444444 transparent; }
