@@ -179,19 +179,33 @@ This works for `GET /api/readings/{date}` and for `/api/readings/range` when it 
 A missing day in the past does not start it (the warm-up begins at today). A cooldown (`READINGS_ONDEMAND_WARM_COOLDOWN`,
 360 minutes) means a burst of requests starts it once. The queue worker (`queue:work`) must be running for it to happen.
 
-## Members only: the church access code
+## Members only: church access codes
 
-Set `READINGS_ACCESS_CODE` in the server's `.env` (for Docker: `docker/app.env`) and restart/`php artisan config:clear`.
-From then on every reading request (`/api/readings/{date}`, `/range`, `/access`) must carry the code in the `X-Church-Code`
-header; without it the server answers 401 and fetches nothing. Leave it empty to keep the API open.
+Set the codes in the server's `.env` (for Docker: `docker/app.env`), then restart or run `php artisan config:clear`:
 
+```
+# the codes you handed out, separated by commas (each one can be withdrawn on its own by deleting it)
+READINGS_ACCESS_CODES=e1c1f1nr2,e1c1f174nr3
+
+# optional alternative: accept ANY code of this format (a regular expression). Weaker, see below.
+# READINGS_ACCESS_PATTERN=e1c1f[0-9]*nr[0-9]+
+```
+
+`READINGS_ACCESS_CODE` (a single code) still works too. With no codes and no pattern the API stays open.
+Capitals and spaces are ignored, so "E1C1F1NR2" typed on a phone keyboard works.
+
+Every reading request (`/api/readings/{date}`, `/range`, `/access`) must carry a valid code in the `X-Church-Code` header;
+otherwise the server answers 401 and fetches nothing.
+
+- **List or format?** A list means only the codes you issued work, and you can withdraw one without affecting the rest.
+  A format accepts every code that looks right, so anyone who learns the format can try codes (the wrong-guess limit slows that down, but it is weaker). Prefer the list.
 - **Apps:** the website, the desktop app (server mode) and the Android app show a "Church code" screen when the server answers 401.
   The typed code is checked with `GET /api/readings/access` and only kept when right. Settings has "Change church code";
-  if you change the code on the server, each device asks again.
-- **Guessing:** wrong codes are limited per IP (`READINGS_ACCESS_MAX_FAILURES`, default 10 a minute, then 429). The right code is never blocked,
+  if a code is withdrawn, that device asks again.
+- **Guessing:** wrong codes are limited per IP (`READINGS_ACCESS_MAX_FAILURES`, default 10 a minute, then 429). A valid code is never blocked,
   so someone guessing on the church's shared Wi-Fi cannot lock the members out.
-- **Caching:** while a code is set the answers are `Cache-Control: private` with `Vary: X-Church-Code`, so Cloudflare or a proxy never hands a stored copy to someone without the code.
+- **Caching:** while codes are set the answers are `Cache-Control: private` with `Vary: X-Church-Code`, so Cloudflare or a proxy never hands a stored copy to someone without a code.
   `/api/health` stays open for the uptime monitor.
-- **Rotating:** change `READINGS_ACCESS_CODE` and tell the members the new one. Keep it out of git (use `.env`, never `.env.example`).
-- **Limits:** a code only keeps casual outsiders out. It is in the members' phones, so anyone who is given it can share it.
+- **Keep codes out of git** (use `.env`, never `.env.example`).
+- **Limits:** a code only keeps casual outsiders out. It is stored in the members' phones, so anyone who is given one can share it.
   The Android app still falls back to Katameros itself when your server is down (that data is public).

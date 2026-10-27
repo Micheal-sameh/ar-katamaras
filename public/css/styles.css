@@ -47,22 +47,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .app[dir='rtl'] { font-family: 'Noto Sans Arabic', Inter, sans-serif; }
 
 .theme-dark {
-  --paper: #16120f;
-  --paper-deep: #100d0b;
-  --surface: #1e1915;
-  --surface-raised: #251e19;
+  --paper: #000000;
+  --paper-deep: #000000;
+  --surface: #0d0d0d;
+  --surface-raised: #161616;
   --ink: #f6eddf;
   --ink-soft: #b9ab9b;
   --accent: #e0a458;
-  --accent-soft: #39291d;
+  --accent-soft: #2a1f14;
   --gold: #e0a458;
-  --border: #3a3028;
-  --border-strong: #514237;
+  --border: #262626;
+  --border-strong: #3a3a3a;
   --shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   --shadow-raised: 0 18px 46px rgba(0, 0, 0, 0.32);
   color-scheme: dark;
 }
-html.is-dark { background: #16120f; }
+html.is-dark { background: #000000; }
 
 .icon { display: block; flex: 0 0 auto; }
 
@@ -340,3 +340,5 @@ input[type='range'] { accent-color: var(--accent); width: 100%; }
 .slide-inner .chapter-mark { font-size: .4em; margin: .6em 0 .3em; }
 .present-progress { position: absolute; bottom: 0; inset-inline-start: 0; height: 4px; background: var(--accent); transition: width 200ms ease; }
 .present .floating-bar { cursor: default; }
+html:has(.focus-mode), html:has(.present) { scrollbar-width: none; }
+html:has(.present) { overflow: hidden; }

@@ -1,6 +1,6 @@
 {
   "name": "ar-katamaras",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Ar-katamaras: Android app for the daily readings",
   "private": true,
   "scripts": {

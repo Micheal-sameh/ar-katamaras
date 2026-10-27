@@ -372,7 +372,7 @@
     const dark = state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('is-dark', dark);
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', dark ? '#16120f' : '#faf7f0');
+    if (meta) meta.setAttribute('content', dark ? '#000000' : '#faf7f0');
     return dark;
   }
   const isDark = () => state.theme === 'dark' || (state.theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);

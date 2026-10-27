@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ChurchAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,7 +21,7 @@ class ReadingsHttpCache
         }
 
         // With a church code, a shared cache (Cloudflare, a proxy) must never hand a stored copy to someone without it.
-        if ((string) config('readings.access.code') !== '') {
+        if (app(ChurchAccess::class)->enabled()) {
             $response->setPrivate();
             $response->headers->set('Vary', 'X-Church-Code');
         } else {

@@ -120,10 +120,13 @@ return [
     | HTTP caching for GET /api/readings/{date}
     |--------------------------------------------------------------------------
     */
-    // Members only. When READINGS_ACCESS_CODE is set, the readings API answers only requests that carry this code
-    // (header X-Church-Code); the apps ask each person for it once. Empty = open to everyone.
+    // Members only. The readings API answers only requests that carry a valid church code (header X-Church-Code);
+    // the apps ask each person for it once. With no codes and no pattern, the API is open to everyone.
+    //   READINGS_ACCESS_CODES   the codes handed out, comma separated (READINGS_ACCESS_CODE, one code, still works)
+    //   READINGS_ACCESS_PATTERN optional: a format every valid code matches, e.g. e1c1f[0-9]*nr[0-9]+
     'access' => [
-        'code' => env('READINGS_ACCESS_CODE'),
+        'codes' => array_values(array_filter(array_map('trim', explode(',', (string) env('READINGS_ACCESS_CODE').','.(string) env('READINGS_ACCESS_CODES'))))),
+        'pattern' => env('READINGS_ACCESS_PATTERN'),
         'max_failures_per_minute' => (int) env('READINGS_ACCESS_MAX_FAILURES', 10), // wrong codes per IP
     ],
 

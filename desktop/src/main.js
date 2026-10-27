@@ -72,6 +72,7 @@ function createWindow() {
   win = new BrowserWindow({
     width: 1100, height: 850, minWidth: 380, minHeight: 560,
     title: 'Avarewase Readings',
+    autoHideMenuBar: true, // no File / View strip: Alt shows it when needed
     backgroundColor: '#faf6ee',
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });

@@ -2,27 +2,29 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\ChurchAccess;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Keeps the readings to people who were given the church access code (READINGS_ACCESS_CODE).
- * The apps send it in the X-Church-Code header. With no code configured, everything is open.
- * Wrong guesses are limited per IP, so the code cannot be tried out by a script.
+ * Keeps the readings to people who were given a church access code (see ChurchAccess for how codes are set).
+ * The apps send it in the X-Church-Code header. With no codes configured, everything is open.
+ * Wrong guesses are limited per IP, so codes cannot be tried out by a script.
  */
 class RequireChurchCode
 {
+    public function __construct(private readonly ChurchAccess $access) {}
+
     public function handle(Request $request, Closure $next): Response
     {
-        $code = (string) config('readings.access.code');
-        if ($code === '') {
+        if (! $this->access->enabled()) {
             return $next($request);
         }
 
         $given = (string) $request->header('X-Church-Code', '');
-        if ($given !== '' && hash_equals($code, $given)) {
+        if ($this->access->accepts($given)) {
             return $next($request);
         }
 
@@ -35,7 +37,7 @@ class RequireChurchCode
             ]);
         }
 
-        if ($given !== '') { // no code at all is normal on the first visit; only a wrong code counts as a miss
+        if (trim($given) !== '') { // no code at all is normal on the first visit; only a wrong code counts as a miss
             RateLimiter::hit($key, 60);
         }
 
