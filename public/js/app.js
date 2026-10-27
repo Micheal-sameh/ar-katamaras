@@ -33,7 +33,7 @@
       appName: 'قراءات اليوم', today: 'اليوم', calendar: 'التقويم', synaxarium: 'السنكسار', settings: 'الإعدادات',
       previous: 'اليوم السابق', next: 'اليوم التالي', nextReading: 'القراءة التالية', prevReading: 'القراءة السابقة', selectDate: 'اختر التاريخ', switchLang: 'English',
       focus: 'وضع القراءة', presentMode: 'عرض تقديمي', scrollMode: 'عرض بالتمرير', slideNext: 'الشريحة التالية', slidePrev: 'الشريحة السابقة', headerLabel: 'شريط عنوان القراءة', headerKeep: 'ثابت', headerScroll: 'يتحرك مع النص', fullscreen: 'ملء الشاشة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
-      darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
+      reload: 'إعادة تحميل التطبيق', darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
       appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', fontType: 'نوع الخط', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
       light: 'فاتح', dark: 'داكن', auto: 'تلقائي', preview: 'معاينة النص', previewText: 'كلامك سراج لرجلي ونور لسبيلي.',
       offlineBanner: 'أنت غير متصل — تعرض القراءات المحفوظة', savedBanner: 'تعذر الاتصال بالخادم — تعرض نسخة محفوظة على هذا الجهاز',
@@ -52,7 +52,7 @@
       appName: "Today's Readings", today: 'Today', calendar: 'Calendar', synaxarium: 'Synaxarium', settings: 'Settings',
       previous: 'Previous day', next: 'Next day', nextReading: 'Next reading', prevReading: 'Previous reading', selectDate: 'Choose a date', switchLang: 'العربية',
       focus: 'Reading focus', presentMode: 'Presentation view', scrollMode: 'Scrolling view', slideNext: 'Next slide', slidePrev: 'Previous slide', headerLabel: 'Reading header bar', headerKeep: 'Stays visible', headerScroll: 'Scrolls away', fullscreen: 'Full screen', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
-      darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
+      reload: 'Reload app', darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
       appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', fontType: 'Font type', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
       light: 'Light', dark: 'Dark', auto: 'Auto', preview: 'Text preview', previewText: 'Your word is a lamp to my feet and a light to my path.',
       offlineBanner: 'You are offline — showing saved readings', savedBanner: 'Server unreachable — showing a copy saved on this device',
@@ -74,6 +74,7 @@
     cross: '<path d="M9 2h6v5h5v6h-5v9H9v-9H4V7h5V2Z" />',
     calendar: '<rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />',
     sun: '<circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.66 6.34l1.41-1.41" />',
+    reload: '<path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" />',
     moon: '<path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" />',
     chevron: '<path d="m8 10 4 4 4-4" />',
     back: '<path d="m15 18-6-6 6-6" />',
@@ -410,6 +411,7 @@
       </button>
       <nav class="desktop-nav" aria-label="${esc(tr.mainNav)}">${nav}</nav>
       <div class="header-actions">
+        ${window.Capacitor ? button({ act: 'reloadApp', variant: 'icon', title: tr.reload, ic: icon('reload') }) : ''}
         ${button({ act: 'toggleTheme', variant: 'icon', title: isDark() ? tr.lightMode : tr.darkMode, ic: icon(isDark() ? 'sun' : 'moon') })}
         ${button({ act: 'nav', variant: 'icon', title: tr.settings, ic: icon('settings'), data: 'data-screen="settings"' })}
       </div>
@@ -855,6 +857,7 @@
     setLang(el) { setLang(el.dataset.v); },
     changeCode() { state.screen = 'today'; state.status = 'locked'; state.codeError = ''; window.scrollTo(0, 0); render(); },
     setHeader(el) { state.stickyHeader = el.dataset.v !== '0'; store.set('stickyHeader', state.stickyHeader ? '1' : '0'); render(); },
+    reloadApp() { window.location.reload(); },
     toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); render(); },
     setTheme(el) { setTheme(el.dataset.v); render(); },
     speedDown() { setSpeed(state.scrollSpeed - 2); render(); },
