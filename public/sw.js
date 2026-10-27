@@ -13,7 +13,7 @@ const NETWORK_TIMEOUT_MS = 4000;
 
 const SHELL_FILES = [
   './', 'index.html', 'manifest.json', 'css/styles.css', 'css/fonts.css',
-  'js/app.js', 'js/config.js', 'js/coptic.js', 'js/demo.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
+  'js/theme-init.js', 'js/app.js', 'js/config.js', 'js/coptic.js', 'js/demo.js', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png',
 ];
 // What the default look needs offline. The other reading fonts are stored the first time they are used.
 const CORE_FONTS = [
