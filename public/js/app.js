@@ -26,7 +26,7 @@
     ar: {
       appName: 'قراءات اليوم', today: 'اليوم', calendar: 'التقويم', synaxarium: 'السنكسار', settings: 'الإعدادات',
       previous: 'اليوم السابق', next: 'اليوم التالي', nextReading: 'القراءة التالية', prevReading: 'القراءة السابقة', selectDate: 'اختر التاريخ', switchLang: 'English',
-      focus: 'وضع القراءة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
+      focus: 'وضع القراءة', headerLabel: 'شريط عنوان القراءة', headerKeep: 'ثابت', headerScroll: 'يتحرك مع النص', fullscreen: 'ملء الشاشة', back: 'رجوع', autoScroll: 'تمرير تلقائي', fontSmaller: 'تصغير الخط', fontLarger: 'تكبير الخط',
       darkMode: 'الوضع الليلي', lightMode: 'الوضع النهاري', nightToggle: 'تبديل الوضع الليلي',
       appearance: 'المظهر والقراءة', langLabel: 'لغة التطبيق', fontSize: 'حجم خط القراءات', fontType: 'نوع الخط', scrollSpeed: 'سرعة التمرير التلقائي', slower: 'أبطأ', faster: 'أسرع', theme: 'السمة',
       light: 'فاتح', dark: 'داكن', auto: 'تلقائي', preview: 'معاينة النص', previewText: 'كلامك سراج لرجلي ونور لسبيلي.',
@@ -44,7 +44,7 @@
     en: {
       appName: "Today's Readings", today: 'Today', calendar: 'Calendar', synaxarium: 'Synaxarium', settings: 'Settings',
       previous: 'Previous day', next: 'Next day', nextReading: 'Next reading', prevReading: 'Previous reading', selectDate: 'Choose a date', switchLang: 'العربية',
-      focus: 'Reading focus', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
+      focus: 'Reading focus', headerLabel: 'Reading header bar', headerKeep: 'Stays visible', headerScroll: 'Scrolls away', fullscreen: 'Full screen', back: 'Back', autoScroll: 'Auto-scroll', fontSmaller: 'Smaller text', fontLarger: 'Larger text',
       darkMode: 'Night mode', lightMode: 'Day mode', nightToggle: 'Toggle night mode',
       appearance: 'Appearance & reading', langLabel: 'App language', fontSize: 'Reading font size', fontType: 'Font type', scrollSpeed: 'Auto-scroll speed', slower: 'Slower', faster: 'Faster', theme: 'Theme',
       light: 'Light', dark: 'Dark', auto: 'Auto', preview: 'Text preview', previewText: 'Your word is a lamp to my feet and a light to my path.',
@@ -69,6 +69,8 @@
     moon: '<path d="M20 15.2A8.5 8.5 0 0 1 8.8 4a8.5 8.5 0 1 0 11.2 11.2Z" />',
     chevron: '<path d="m8 10 4 4 4-4" />',
     back: '<path d="m15 18-6-6 6-6" />',
+    expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />',
+    shrink: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" />',
     scroll: '<path d="M7 4h11v14a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V7h12" /><path d="M7 4a3 3 0 0 0-3 3h3V4Z" />',
     refresh: '<path d="M20 11a8 8 0 1 0-2.34 5.66" /><path d="M20 5v6h-6" />',
     book: '<path d="M4 5.5A3.5 3.5 0 0 1 7.5 2H11v18H7.5A3.5 3.5 0 0 0 4 23V5.5ZM20 5.5A3.5 3.5 0 0 0 16.5 2H13v18h3.5a3.5 3.5 0 0 1 3.5 3V5.5Z" />',
@@ -101,6 +103,7 @@
     fontFamily: store.get('fontFamily') in FONT_FAMILIES ? store.get('fontFamily') : 'amiri',
     scrollSpeed: clamp(parseInt(store.get('scrollSpeed', '8'), 10) || 8, SPEED_MIN, SPEED_MAX),
     screen: 'today',
+    stickyHeader: store.get('stickyHeader', '1') !== '0', // keep the reading header visible while scrolling
     date: todayISO(),
     calMonth: null, // {y, m} (m 0-based); null = follow selected date
     data: null,
@@ -591,6 +594,8 @@
           <div class="font-preview" style="--reading-size:${state.fontSize}px"><span>${esc(tr.preview)}</span><p>${esc(tr.previewText)}</p></div></div>
         <div class="setting-row stacked"><div><strong>${esc(tr.scrollSpeed)}</strong><small>${num(state.scrollSpeed)}</small></div>
           <input aria-label="${esc(tr.scrollSpeed)}" type="range" min="${SPEED_MIN}" max="${SPEED_MAX}" value="${state.scrollSpeed}" data-input="speed"></div>
+        <div class="setting-row"><div><strong>${esc(tr.headerLabel)}</strong><small>${esc(state.stickyHeader ? tr.headerKeep : tr.headerScroll)}</small></div>
+          ${seg([['setHeader', tr.headerKeep, state.stickyHeader, '', 'data-v="1"'], ['setHeader', tr.headerScroll, !state.stickyHeader, '', 'data-v="0"']])}</div>
         <div class="setting-row"><div><strong>${esc(tr.theme)}</strong><small>${esc(tr[state.theme])}</small></div>
           ${seg([['setTheme', tr.light, state.theme === 'light', icon('sun', 17), 'data-v="light"'], ['setTheme', tr.dark, state.theme === 'dark', icon('moon', 17), 'data-v="dark"'], ['setTheme', tr.auto, state.theme === 'auto', '', 'data-v="auto"']])}</div>
       </div>
@@ -604,7 +609,7 @@
     const sub = section.subSections[state.focus.tab] || section.subSections[0];
     const first = sub.readings[0];
     const ref = first && first.passages[0] ? first.passages.map((p) => p.ref).filter(Boolean).join(' · ') : '';
-    return `<div class="focus-mode">
+    return `<div class="focus-mode${state.stickyHeader ? '' : ' header-scrolls'}">
       <div class="focus-top">${button({ act: 'back', label: tr.back, ic: dirIcon(false) })}<span>${esc(sub.title)}${ref ? ` · ${esc(ref)}` : ''}</span><span></span></div>
       <main class="focus-reading" style="--reading-size:${state.fontSize + 5}px">
         <span class="cross-divider">${icon('cross', 16)}</span>
@@ -617,6 +622,7 @@
         ${button({ act: 'fontMinus', variant: 'icon', title: tr.fontSmaller, ic: '<span class="a-control">A−</span>' })}
         ${button({ act: 'fontPlus', variant: 'icon', title: tr.fontLarger, ic: '<span class="a-control">A+</span>' })}
         ${button({ act: 'toggleTheme', variant: 'icon', title: isDark() ? tr.lightMode : tr.darkMode, ic: icon(isDark() ? 'sun' : 'moon') })}
+        ${canFullscreen() ? button({ act: 'fullscreen', variant: 'icon', active: inFullscreen(), title: tr.fullscreen, ic: icon(inFullscreen() ? 'shrink' : 'expand') }) : ''}
         ${button({ act: 'autoScroll', variant: 'icon', active: state.auto, title: tr.autoScroll, ic: icon('scroll') })}
         ${state.auto ? `${button({ act: 'speedDown', variant: 'icon', title: tr.slower, ic: '<span class="a-control">«</span>', extra: state.scrollSpeed <= SPEED_MIN ? ' disabled' : '' })}<span class="speed-value" aria-live="polite">${num(state.scrollSpeed)}</span>${button({ act: 'speedUp', variant: 'icon', title: tr.faster, ic: '<span class="a-control">»</span>', extra: state.scrollSpeed >= SPEED_MAX ? ' disabled' : '' })}` : ''}
       </div></div>`;
@@ -642,6 +648,20 @@
     const screens = { today: todayScreen, calendar: calendarScreen, synaxarium: synaxariumScreen, settings: settingsScreen };
     root.innerHTML = `${header()}${screens[state.screen]()}${mobileNav()}`;
   }
+
+  // ---------------------------------------------------------------- full screen
+  // The reading view asks the browser for real full screen (no address bar, no taskbar). It works in browsers,
+  // installed apps and the desktop app; iPhone Safari has no such API, so the button is hidden there and the
+  // text still fills the whole page.
+  const canFullscreen = () => !!(document.fullscreenEnabled && document.documentElement.requestFullscreen);
+  const inFullscreen = () => !!document.fullscreenElement;
+  function enterFullscreen() {
+    if (canFullscreen() && !inFullscreen()) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).catch(() => { /* refused: the page is still full width */ });
+  }
+  function leaveFullscreen() {
+    if (inFullscreen()) document.exitFullscreen().catch(() => {});
+  }
+  document.addEventListener('fullscreenchange', () => { if (state.focus) render(); });
 
   // ---------------------------------------------------------------- actions
   function goDate(iso) {
@@ -673,6 +693,7 @@
     calNext() { shiftMonth(1); },
     toggleLang() { setLang(isAr() ? 'en' : 'ar'); },
     setLang(el) { setLang(el.dataset.v); },
+    setHeader(el) { state.stickyHeader = el.dataset.v !== '0'; store.set('stickyHeader', state.stickyHeader ? '1' : '0'); render(); },
     toggleTheme() { setTheme(isDark() ? 'light' : 'dark'); render(); },
     setTheme(el) { setTheme(el.dataset.v); render(); },
     speedDown() { setSpeed(state.scrollSpeed - 2); render(); },
@@ -681,14 +702,15 @@
     fontPlus() { setFont(state.fontSize + 2); render(); },
     section(el) { const i = Number(el.dataset.i); state.open = state.open === i ? -1 : i; render(); },
     tab(el) { state.tabs[el.dataset.sec] = Number(el.dataset.i); render(); },
-    focus(el) { state.focus = { sec: Number(el.dataset.sec), tab: Number(el.dataset.i) }; window.scrollTo(0, 0); render(); },
+    focus(el) { state.focus = { sec: Number(el.dataset.sec), tab: Number(el.dataset.i) }; enterFullscreen(); window.scrollTo(0, 0); render(); },
+    fullscreen() { if (inFullscreen()) leaveFullscreen(); else enterFullscreen(); },
     nextReading(el) {
       const sec = Number(el.dataset.sec), tab = Number(el.dataset.i);
       if (state.focus) state.focus = { sec, tab }; else { state.open = sec; state.tabs[sec] = tab; }
       window.scrollTo(0, 0);
       render();
     },
-    back() { state.focus = null; stopAuto(); render(); },
+    back() { state.focus = null; stopAuto(); leaveFullscreen(); render(); },
     autoScroll() { state.auto = !state.auto; if (state.auto) { cancelAnimationFrame(rafId); autoLoop(); } render(); },
     retry() { load(); },
   };
