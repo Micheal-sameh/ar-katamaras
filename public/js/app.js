@@ -16,13 +16,15 @@
   const SYNC_EVERY_DAYS = 14;
   const SYNC_MIN_AHEAD_DAYS = 7; // also top up early when fewer than this many days are left ahead
   const FONT_MIN = 17;
-  const FONT_MAX = 30;
+  const FONT_MAX = 120;
   const FONT_FAMILIES = {
     amiri: ['Amiri', "Amiri, Georgia, serif"],
     naskh: ['Noto Naskh Arabic', "'Noto Naskh Arabic', Georgia, serif"],
     scheherazade: ['Scheherazade New', "'Scheherazade New', Georgia, serif"],
     cairo: ['Cairo', "Cairo, sans-serif"],
     tajawal: ['Tajawal', "Tajawal, sans-serif"],
+    times: ['Times New Roman', "'Times New Roman', Times, 'Liberation Serif', serif"], // the device's own font
+    arial: ['Arial', "Arial, 'Liberation Sans', Helvetica, sans-serif"], // the device's own font, nothing to download
   };
   const SPEED_MIN = 2; // auto-scroll, pixels per second
   const SPEED_MAX = 30;
@@ -300,6 +302,8 @@
     state.tabs = {};
   }
 
+  const AUTO_RETRY_DELAYS_MS = [2000, 5000, 12000];
+  const autoRetry = { key: '', n: 0 };
   async function load() {
     const token = ++loadToken;
     const { date, lang } = state;
@@ -330,6 +334,7 @@
         return;
       }
       writeStored(date, lang, raw); // never store an empty/invalid response
+      autoRetry.n = 0;
       const bannerWasShown = state.rateLimited || state.fromStore;
       state.rateLimited = false;
       state.fromStore = false;
@@ -349,7 +354,18 @@
       if (e && e.status === 401) { state.status = 'locked'; state.codeError = ''; render(); return; } // before the saved copy: a saved day must not get round the code
       if (stored) { state.fromStore = true; render(); return; } // offline / server down: keep the saved copy
       if (e && e.status === 422) state.status = 'range';
-      else { state.status = 'error'; state.errorMessage = (e && e.serverMessage) || ''; }
+      else {
+        state.status = 'error'; state.errorMessage = (e && e.serverMessage) || '';
+        // not saved yet and the request failed (network blip, server waking up): ask again by ourselves a few times
+        const key = `${date}|${lang}`;
+        autoRetry.n = autoRetry.key === key ? autoRetry.n : 0;
+        autoRetry.key = key;
+        if (autoRetry.n < AUTO_RETRY_DELAYS_MS.length) {
+          const wait = AUTO_RETRY_DELAYS_MS[autoRetry.n++];
+          state.status = 'loading';
+          setTimeout(() => { if (token === loadToken) load(); }, wait);
+        }
+      }
       render();
     }
   }
@@ -873,8 +889,8 @@
     setTheme(el) { setTheme(el.dataset.v); render(); },
     speedDown() { setSpeed(state.scrollSpeed - 2); render(); },
     speedUp() { setSpeed(state.scrollSpeed + 2); render(); },
-    fontMinus() { setFont(state.fontSize - 2); render(); },
-    fontPlus() { setFont(state.fontSize + 2); render(); },
+    fontMinus() { setFont(state.fontSize - (state.fontSize > 40 ? 5 : 2)); render(); }, // bigger steps once the text is large
+    fontPlus() { setFont(state.fontSize + (state.fontSize >= 40 ? 5 : 2)); render(); },
     section(el) { const i = Number(el.dataset.i); state.open = state.open === i ? -1 : i; render(); },
     tab(el) { state.tabs[el.dataset.sec] = Number(el.dataset.i); render(); },
     focus(el) { state.focus = { sec: Number(el.dataset.sec), tab: Number(el.dataset.i) }; state.slide = 0; enterFullscreen(); window.scrollTo(0, 0); render(); },
@@ -887,7 +903,7 @@
     },
     back() { state.focus = null; stopAuto(); leaveFullscreen(); render(); },
     autoScroll() { state.auto = !state.auto; if (state.auto) { cancelAnimationFrame(rafId); autoLoop(); } render(); },
-    retry() { load(); },
+    retry() { autoRetry.n = 0; load(); },
     none() { /* clicks on the toolbars must not advance the slide */ },
     slideNext() { goSlide(1); },
     slidePrev() { goSlide(-1); },
